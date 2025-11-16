@@ -3232,6 +3232,7 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-functions-compat.js"></script>
     <script>
         // ============================================
         // Firebase Configuration
@@ -3401,6 +3402,60 @@
                     return { success: true };
                 } catch (error) {
                     return { success: false, error: error.message };
+                }
+            }
+        };
+        
+        // MTN Mobile Money API Service using Firebase Cloud Functions
+        const mtnMoMoAPI = {
+            // Request payment from customer using Firebase Cloud Function
+            async requestPayment(phoneNumber, amount, externalId, invoiceId) {
+                try {
+                    // Call Firebase Cloud Function
+                    const requestPayment = firebase.functions().httpsCallable('requestMTNPayment');
+                    const result = await requestPayment({
+                        phoneNumber: phoneNumber.replace(/\D/g, ''), // Remove non-digits
+                        amount: amount.toString(),
+                        currency: 'GHS',
+                        externalId: externalId,
+                        invoiceId: invoiceId
+                    });
+                    
+                    if (result.data.success) {
+                        return {
+                            success: true,
+                            transactionId: result.data.transactionId,
+                            status: result.data.status
+                        };
+                    } else {
+                        return { success: false, error: result.data.error || 'Payment request failed' };
+                    }
+                } catch (error) {
+                    console.error('Error requesting MTN MoMo payment:', error);
+                    return { success: false, error: error.message || 'Failed to process payment request' };
+                }
+            },
+            
+            // Check payment status using Firebase Cloud Function
+            async checkPaymentStatus(transactionId) {
+                try {
+                    // Call Firebase Cloud Function
+                    const checkStatus = firebase.functions().httpsCallable('checkMTNPaymentStatus');
+                    const result = await checkStatus({ transactionId: transactionId });
+                    
+                    if (result.data.success) {
+                        return {
+                            success: true,
+                            status: result.data.status,
+                            amount: result.data.amount,
+                            currency: result.data.currency
+                        };
+                    } else {
+                        return { success: false, error: result.data.error || 'Failed to check payment status' };
+                    }
+                } catch (error) {
+                    console.error('Error checking payment status:', error);
+                    return { success: false, error: error.message || 'Failed to check payment status' };
                 }
             }
         };
@@ -5928,6 +5983,129 @@
             }).join('');
         }
 
+        // Initiate MTN Mobile Money Payment
+        async function initiateMTNPayment(request) {
+            const invoice = request.invoice;
+            const amount = invoice.total;
+            
+            // Get user's phone number
+            const currentUser = firebaseAuth.getCurrentUser();
+            if (!currentUser) {
+                alert('Please sign in to make a payment.');
+                return;
+            }
+            
+            // Get user data
+            const userData = await sessionDB.get('homefix_user') || {};
+            let phoneNumber = userData.phone || request.clientPhone;
+            
+            if (!phoneNumber) {
+                phoneNumber = prompt('Please enter your MTN Mobile Money phone number (e.g., 0244123456):');
+                if (!phoneNumber) {
+                    return;
+                }
+            }
+            
+            // Validate phone number format
+            const cleanPhone = phoneNumber.replace(/\D/g, '');
+            if (cleanPhone.length < 9 || !cleanPhone.startsWith('0')) {
+                alert('Please enter a valid Ghana phone number (e.g., 0244123456)');
+                return;
+            }
+            
+            // Confirm payment
+            const confirmMessage = `📱 MTN Mobile Money Payment\n\n` +
+                `Invoice ID: ${invoice.id}\n` +
+                `Amount: ₵${amount.toFixed(2)}\n` +
+                `Phone: ${phoneNumber}\n\n` +
+                `You will receive a prompt on your phone to approve this payment.\n\n` +
+                `Continue?`;
+            
+            if (!confirm(confirmMessage)) {
+                return;
+            }
+            
+            // Show loading
+            const loadingMessage = `Processing payment...\n\n` +
+                `Please check your phone and approve the payment when prompted.`;
+            alert(loadingMessage);
+            
+            // Generate external ID for tracking
+            const externalId = `INV-${invoice.id}-${Date.now()}`;
+            
+            // Request payment
+            const paymentResult = await mtnMoMoAPI.requestPayment(
+                phoneNumber,
+                amount,
+                externalId,
+                invoice.id
+            );
+            
+            if (!paymentResult.success) {
+                alert(`Payment failed: ${paymentResult.error}\n\nPlease try again or contact support.`);
+                return;
+            }
+            
+            // Store transaction ID
+            const transactionId = paymentResult.transactionId;
+            
+            // Start polling for payment status
+            pollPaymentStatus(request.id, transactionId, invoice.id);
+        }
+        
+        // Poll payment status
+        async function pollPaymentStatus(requestId, transactionId, invoiceId) {
+            let attempts = 0;
+            const maxAttempts = 30; // Poll for 5 minutes (10 seconds * 30)
+            
+            const pollInterval = setInterval(async () => {
+                attempts++;
+                
+                const statusResult = await mtnMoMoAPI.checkPaymentStatus(transactionId);
+                
+                if (statusResult.success) {
+                    if (statusResult.status === 'SUCCESSFUL' || statusResult.status === 'COMPLETED') {
+                        clearInterval(pollInterval);
+                        
+                        // Update invoice status in Firestore
+                        const requestResult = await firebaseRequests.getRequest(requestId);
+                        if (requestResult.success && requestResult.data) {
+                            const request = requestResult.data;
+                            const updatedInvoice = {
+                                ...request.invoice,
+                                status: 'paid',
+                                paymentStatus: 'paid',
+                                paidAt: new Date().toISOString(),
+                                transactionId: transactionId,
+                                paymentMethod: 'MTN Mobile Money'
+                            };
+                            
+                            await firebaseRequests.updateRequest(requestId, {
+                                invoice: updatedInvoice
+                            });
+                            
+                            alert(`✅ Payment Successful!\n\n` +
+                                `Invoice ID: ${invoiceId}\n` +
+                                `Amount Paid: ₵${statusResult.amount || request.invoice.total}\n` +
+                                `Transaction ID: ${transactionId}\n\n` +
+                                `Thank you for your payment!`);
+                            
+                            // Refresh tasks
+                            renderTasks();
+                        }
+                    } else if (statusResult.status === 'FAILED' || statusResult.status === 'CANCELLED') {
+                        clearInterval(pollInterval);
+                        alert(`❌ Payment ${statusResult.status.toLowerCase()}\n\nPlease try again or contact support.`);
+                    }
+                }
+                
+                if (attempts >= maxAttempts) {
+                    clearInterval(pollInterval);
+                    alert('Payment status check timed out. Please check your payment history or contact support.');
+                }
+            }, 10000); // Check every 10 seconds
+        }
+
         // View User Request (new function for actual user requests)
         async function viewUserRequest(requestId) {
             // Check if user is logged in using Firebase auth
@@ -6002,15 +6180,17 @@
             alert(message);
         }
         
-        // Show User Invoice with full details
+        // Show User Invoice with full details and payment option
         function showUserInvoice(request) {
             const invoice = request.invoice;
+            const isPaid = invoice.status === 'paid' || invoice.paymentStatus === 'paid';
+            
             let message = `📄 INVOICE DETAILS\n`;
             message += `${'='.repeat(60)}\n\n`;
             message += `Invoice ID: ${invoice.id || 'N/A'}\n`;
             message += `Service: ${request.service || 'N/A'}\n`;
             message += `Date: ${invoice.date || 'N/A'} ${invoice.time || ''}\n`;
-            message += `Status: ${invoice.status ? invoice.status.toUpperCase() : 'SENT'}\n`;
+            message += `Status: ${isPaid ? 'PAID ✅' : (invoice.status ? invoice.status.toUpperCase() : 'PENDING PAYMENT')}\n`;
             
             if (request.provider) {
                 message += `\n${'-'.repeat(60)}\n`;
@@ -6046,7 +6226,20 @@
                 message += `\nSent: ${sentDate.toLocaleDateString()} ${sentDate.toLocaleTimeString()}\n`;
             }
             
-            alert(message);
+            if (invoice.paidAt) {
+                const paidDate = new Date(invoice.paidAt);
+                message += `\nPaid: ${paidDate.toLocaleDateString()} ${paidDate.toLocaleTimeString()}\n`;
+            }
+            
+            // Show payment button if not paid
+            if (!isPaid) {
+                const shouldPay = confirm(message + `\n\nWould you like to pay this invoice now?`);
+                if (shouldPay) {
+                    initiateMTNPayment(request);
+                }
+            } else {
+                alert(message);
+            }
         }
 
         // View Task (legacy function for mock tasks - kept for compatibility)
