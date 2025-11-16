@@ -3409,13 +3409,23 @@
         const firebaseRequests = {
             async createRequest(requestData) {
                 try {
+                    console.log('💾 Creating request in Firestore:', {
+                        clientEmail: requestData.clientEmail,
+                        clientName: requestData.clientName,
+                        service: requestData.service,
+                        status: requestData.status
+                    });
+                    
                     const docRef = await db.collection('requests').add({
                         ...requestData,
                         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
                         updatedAt: firebase.firestore.FieldValue.serverTimestamp()
                     });
+                    
+                    console.log('✅ Request created successfully with ID:', docRef.id);
                     return { success: true, id: docRef.id };
                 } catch (error) {
+                    console.error('❌ Error creating request:', error);
                     return { success: false, error: error.message };
                 }
             },
@@ -3444,44 +3454,73 @@
                 }
             },
             
-            async getUserRequests(userEmail) {
+            async getUserRequests(userUid) {
                 try {
-                    // Query requests by email (if index error occurs, create composite index in Firebase Console)
-                    let snapshot;
-                    try {
-                        snapshot = await db.collection('requests')
-                            .where('clientEmail', '==', userEmail)
-                            .orderBy('createdAt', 'desc')
-                            .get();
-                    } catch (error) {
-                        // If index error, get all and filter client-side
-                        if (error.message.includes('index')) {
-                            const allSnapshot = await db.collection('requests')
-                                .orderBy('createdAt', 'desc')
-                                .get();
-                            snapshot = {
-                                forEach: (callback) => {
-                                    allSnapshot.forEach(doc => {
-                                        const data = doc.data();
-                                        if (data.clientEmail === userEmail) {
-                                            callback({ id: doc.id, data: () => data });
-                                        }
-                                    });
-                                }
-                            };
-                        } else {
-                            throw error;
-                        }
+                    console.log('🔍 getUserRequests - Searching for user UID:', userUid);
+                    
+                    if (!userUid) {
+                        console.error('❌ No user UID provided');
+                        return { success: false, error: 'No user UID provided' };
                     }
                     
                     const requests = [];
-                    snapshot.forEach(doc => {
-                        const data = doc.data ? doc.data() : doc;
-                        requests.push({ id: doc.id, ...data });
-                    });
+                    
+                    // Query requests by user UID
+                    try {
+                        // Try with orderBy first (faster if index exists)
+                        let snapshot;
+                        try {
+                            snapshot = await db.collection('requests')
+                                .where('clientUid', '==', userUid)
+                                .orderBy('createdAt', 'desc')
+                                .get();
+                        } catch (orderByError) {
+                            // If orderBy fails (no index), try without it
+                            console.warn('⚠️ orderBy failed, trying without orderBy:', orderByError.message);
+                            try {
+                                snapshot = await db.collection('requests')
+                                    .where('clientUid', '==', userUid)
+                                    .get();
+                            } catch (whereError) {
+                                // If where also fails, get all and filter client-side
+                                console.warn('⚠️ where query failed, fetching all and filtering:', whereError.message);
+                                const allSnapshot = await db.collection('requests').get();
+                                snapshot = {
+                                    forEach: (callback) => {
+                                        allSnapshot.forEach(doc => {
+                                            const data = doc.data();
+                                            if (data.clientUid === userUid) {
+                                                callback({ id: doc.id, data: () => data });
+                                            }
+                                        });
+                                    },
+                                    size: allSnapshot.size
+                                };
+                            }
+                        }
+                        
+                        console.log('📊 Total requests found for user:', snapshot.size || 0);
+                        
+                        snapshot.forEach(doc => {
+                            const data = doc.data ? doc.data() : doc;
+                            console.log('✅ Request found:', {
+                                id: doc.id,
+                                service: data.service,
+                                status: data.status,
+                                clientUid: data.clientUid
+                            });
+                            requests.push({ id: doc.id, ...data });
+                        });
+                        
+                        console.log(`✅ Total matching requests: ${requests.length}`);
+                    } catch (error) {
+                        console.error('❌ Error fetching requests:', error);
+                        return { success: false, error: error.message };
+                    }
                     
                     return { success: true, data: requests };
                 } catch (error) {
+                    console.error('❌ getUserRequests error:', error);
                     return { success: false, error: error.message };
                 }
             },
@@ -4406,8 +4445,8 @@
             <div class="tasks-header">
                 <h1 class="tasks-title">My Tasks</h1>
                 <div class="tabs-row">
-                    <button class="tab active" onclick="switchTaskTab('current')">Current Tasks</button>
-                    <button class="tab" onclick="switchTaskTab('past')">Past Tasks</button>
+                    <button class="tab active" onclick="switchTaskTab('current', event)">Current Tasks</button>
+                    <button class="tab" onclick="switchTaskTab('past', event)">Past Tasks</button>
                 </div>
             </div>
 
@@ -4920,48 +4959,30 @@
                 <div class="settings-section">
                     <h2 class="settings-section-title">Saved Payment Methods</h2>
                     <div class="payment-methods-list" id="payment-methods-list">
-                        <div class="payment-method-card">
-                            <div class="payment-method-info">
-                                <div class="payment-method-icon">
-                                    <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
-                                    </svg>
-                                </div>
-                                <div class="payment-method-details">
-                                    <div class="payment-method-name">Visa •••• 4242</div>
-                                    <div class="payment-method-number">Expires 12/25</div>
-                                </div>
-                            </div>
-                            <div class="payment-method-actions">
-                                <span class="payment-method-badge">Default</span>
-                                <button class="btn btn-ghost" style="padding: var(--spacing-xs) var(--spacing-md);" onclick="alert('Edit card')">Edit</button>
-                                <button class="btn btn-ghost" style="padding: var(--spacing-xs) var(--spacing-md);" onclick="alert('Remove card')">Remove</button>
-                            </div>
-                        </div>
+                        <!-- Payment methods will be populated here -->
                     </div>
                     <button class="btn btn-primary" onclick="showAddPaymentMethod()">Add Payment Method</button>
                 </div>
 
                 <div class="settings-section" id="add-payment-section" style="display: none;">
-                    <h2 class="settings-section-title">Add Payment Method</h2>
+                    <h2 class="settings-section-title">Add Mobile Money Account</h2>
                     <form onsubmit="addPaymentMethod(event)">
                         <div class="form-group-settings">
-                            <label class="form-label-settings">Card Number <span class="required">*</span></label>
-                            <input type="text" class="form-input" id="card-number" placeholder="1234 5678 9012 3456" required>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group-settings">
-                                <label class="form-label-settings">Expiry Date <span class="required">*</span></label>
-                                <input type="text" class="form-input" id="card-expiry" placeholder="MM/YY" required>
-                            </div>
-                            <div class="form-group-settings">
-                                <label class="form-label-settings">CVV <span class="required">*</span></label>
-                                <input type="text" class="form-input" id="card-cvv" placeholder="123" required>
-                            </div>
+                            <label class="form-label-settings">Mobile Money Provider <span class="required">*</span></label>
+                            <select class="form-input" id="mobile-money-provider" required>
+                                <option value="">Select provider</option>
+                                <option value="mtn">MTN Mobile Money</option>
+                                <option value="telecel">Telecel Cash</option>
+                                <option value="airtel-tigo">AirtelTigo Money</option>
+                            </select>
                         </div>
                         <div class="form-group-settings">
-                            <label class="form-label-settings">Cardholder Name <span class="required">*</span></label>
-                            <input type="text" class="form-input" id="card-name" required>
+                            <label class="form-label-settings">Phone Number <span class="required">*</span></label>
+                            <input type="tel" class="form-input" id="mobile-money-number" placeholder="0244 123 456" required>
+                        </div>
+                        <div class="form-group-settings">
+                            <label class="form-label-settings">Account Name <span class="required">*</span></label>
+                            <input type="text" class="form-input" id="mobile-money-name" placeholder="Enter account holder name" required>
                         </div>
                         <div class="form-group-settings">
                             <label class="form-checkbox">
@@ -4971,7 +4992,7 @@
                         </div>
                         <div class="settings-actions">
                             <button type="button" class="btn btn-ghost" onclick="hideAddPaymentMethod()">Cancel</button>
-                            <button type="submit" class="btn btn-primary">Add Card</button>
+                            <button type="submit" class="btn btn-primary">Add Mobile Money</button>
                         </div>
                     </form>
                 </div>
@@ -5149,7 +5170,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                         </svg>
                     </div>
-                    <div class="faq-answer">We accept all major credit cards, debit cards, and mobile money. You can add and manage payment methods in your account settings.</div>
+                    <div class="faq-answer">We accept mobile money payments through MTN Mobile Money, Telecel Cash, and AirtelTigo Money. You can add and manage your mobile money accounts in your account settings.</div>
                 </div>
                 <div class="faq-item" onclick="toggleFAQ(this)">
                     <div class="faq-question">
@@ -5572,81 +5593,168 @@
 
         // Submit Survey
         async function submitSurvey(event) {
-            event.preventDefault();
-            const formData = {
-                service: document.getElementById('survey-service').value,
-                date: document.getElementById('survey-date').value,
-                time: document.getElementById('survey-time').value,
-                location: document.getElementById('survey-location').value,
-                urgency: document.querySelector('input[name="urgency"]:checked').value,
-                description: document.getElementById('survey-description').value,
-                phone: document.getElementById('survey-phone').value,
-                requirements: Array.from(document.querySelectorAll('input[name="requirements"]:checked')).map(cb => cb.value)
-            };
+            try {
+                event.preventDefault();
+                console.log('📝 Survey form submitted');
+                
+                // Get form values with error checking
+                const serviceEl = document.getElementById('survey-service');
+                const dateEl = document.getElementById('survey-date');
+                const timeEl = document.getElementById('survey-time');
+                const locationEl = document.getElementById('survey-location');
+                const urgencyEl = document.querySelector('input[name="urgency"]:checked');
+                const descriptionEl = document.getElementById('survey-description');
+                const phoneEl = document.getElementById('survey-phone');
+                
+                if (!serviceEl || !dateEl || !timeEl || !locationEl || !urgencyEl || !descriptionEl || !phoneEl) {
+                    console.error('❌ Missing form elements:', {
+                        service: !!serviceEl,
+                        date: !!dateEl,
+                        time: !!timeEl,
+                        location: !!locationEl,
+                        urgency: !!urgencyEl,
+                        description: !!descriptionEl,
+                        phone: !!phoneEl
+                    });
+                    alert('Error: Some form fields are missing. Please refresh the page and try again.');
+                    return;
+                }
+                
+                const formData = {
+                    service: serviceEl.value,
+                    date: dateEl.value,
+                    time: timeEl.value,
+                    location: locationEl.value,
+                    urgency: urgencyEl.value,
+                    description: descriptionEl.value,
+                    phone: phoneEl.value,
+                    requirements: Array.from(document.querySelectorAll('input[name="requirements"]:checked')).map(cb => cb.value)
+                };
+                
+                console.log('📋 Form data collected:', formData);
+                
+                // Validate required fields
+                if (!formData.service || !formData.date || !formData.time || !formData.location || !formData.urgency || !formData.description || !formData.phone) {
+                    alert('Please fill in all required fields.');
+                    console.error('❌ Missing required fields');
+                    return;
+                }
 
-            // Get user information
-            const userData = await sessionDB.get('homefix_user') || {};
-            
-            const newRequest = {
-                clientName: userData.name || 'Guest User',
-                clientEmail: userData.email || 'guest@example.com',
-                clientPhone: formData.phone,
-                service: formData.service,
-                description: formData.description,
-                location: formData.location,
-                date: new Date(formData.date).toLocaleDateString(),
-                preferredTime: formData.time,
-                urgency: formData.urgency,
-                requirements: formData.requirements,
-                status: 'pending'
-            };
-            
-            // Save request to Firestore
-            const result = await firebaseRequests.createRequest(newRequest);
-            
-            if (!result.success) {
-                alert('Error creating request. Please try again.');
-                return;
+                // Get current user - must be logged in
+                const currentUser = firebaseAuth.getCurrentUser();
+                console.log('👤 Current user check:', currentUser ? { uid: currentUser.uid, email: currentUser.email } : 'Not logged in');
+                
+                if (!currentUser || !currentUser.uid) {
+                    alert('Please sign in to submit a service request.');
+                    showAuthPage('signin');
+                    return;
+                }
+                
+                // Get user information
+                let userData = await sessionDB.get('homefix_user') || {};
+                let userName = userData.name;
+                let userEmail = userData.email || currentUser.email;
+                
+                // If name not available, try to get from Firebase user data
+                if (!userName) {
+                    const userDataResult = await firebaseUsers.getUser(currentUser.uid);
+                    if (userDataResult.success && userDataResult.data) {
+                        userName = userDataResult.data.name;
+                        userEmail = userDataResult.data.email || userEmail;
+                    }
+                }
+                
+                // Fallback to email username if no name
+                if (!userName) {
+                    userName = userEmail ? userEmail.split('@')[0] : 'User';
+                }
+                
+                console.log('Creating request for user:', { uid: currentUser.uid, userName, userEmail, service: formData.service });
+                
+                const newRequest = {
+                    clientUid: currentUser.uid, // Store user ID for easy querying
+                    clientName: userName || 'User',
+                    clientEmail: userEmail || '',
+                    clientPhone: formData.phone,
+                    service: formData.service,
+                    description: formData.description,
+                    location: formData.location,
+                    date: new Date(formData.date).toLocaleDateString(),
+                    preferredTime: formData.time,
+                    urgency: formData.urgency,
+                    requirements: formData.requirements,
+                    status: 'pending'
+                };
+                
+                // Save request to Firestore
+                console.log('💾 Saving request to Firestore...');
+                const result = await firebaseRequests.createRequest(newRequest);
+                
+                if (!result.success) {
+                    alert('Error creating request: ' + (result.error || 'Unknown error') + '. Please try again.');
+                    console.error('❌ Error creating request:', result.error);
+                    return;
+                }
+                
+                newRequest.id = result.id; // Store the generated ID
+                console.log('✅ Request created successfully:', newRequest.id, newRequest);
+
+                // Populate confirmation details
+                const confirmationDetails = document.getElementById('confirmation-details');
+                if (!confirmationDetails) {
+                    console.error('❌ Confirmation details element not found');
+                    alert('Request created but confirmation screen not found. Request ID: ' + newRequest.id);
+                    showScreen('tasks'); // Fallback to tasks screen
+                    return;
+                }
+                
+                confirmationDetails.innerHTML = `
+                    <div class="confirmation-details-item">
+                        <span class="confirmation-details-label">Service</span>
+                        <span class="confirmation-details-value">${formData.service}</span>
+                    </div>
+                    <div class="confirmation-details-item">
+                        <span class="confirmation-details-label">Date</span>
+                        <span class="confirmation-details-value">${new Date(formData.date).toLocaleDateString()}</span>
+                    </div>
+                    <div class="confirmation-details-item">
+                        <span class="confirmation-details-label">Time</span>
+                        <span class="confirmation-details-value">${formData.time}</span>
+                    </div>
+                    <div class="confirmation-details-item">
+                        <span class="confirmation-details-label">Location</span>
+                        <span class="confirmation-details-value">${formData.location}</span>
+                    </div>
+                    <div class="confirmation-details-item">
+                        <span class="confirmation-details-label">Urgency</span>
+                        <span class="confirmation-details-value">${formData.urgency.charAt(0).toUpperCase() + formData.urgency.slice(1)}</span>
+                    </div>
+                `;
+
+                console.log('✅ Survey submitted successfully');
+                console.log('📋 Request details:', newRequest);
+                
+                showScreen('confirmation');
+            } catch (error) {
+                console.error('❌ Error in submitSurvey:', error);
+                alert('An error occurred while submitting your request: ' + error.message + '. Please try again.');
             }
-            
-            newRequest.id = result.id; // Store the generated ID
-
-            // Populate confirmation details
-            const confirmationDetails = document.getElementById('confirmation-details');
-            confirmationDetails.innerHTML = `
-                <div class="confirmation-details-item">
-                    <span class="confirmation-details-label">Service</span>
-                    <span class="confirmation-details-value">${formData.service}</span>
-                </div>
-                <div class="confirmation-details-item">
-                    <span class="confirmation-details-label">Date</span>
-                    <span class="confirmation-details-value">${new Date(formData.date).toLocaleDateString()}</span>
-                </div>
-                <div class="confirmation-details-item">
-                    <span class="confirmation-details-label">Time</span>
-                    <span class="confirmation-details-value">${formData.time}</span>
-                </div>
-                <div class="confirmation-details-item">
-                    <span class="confirmation-details-label">Location</span>
-                    <span class="confirmation-details-value">${formData.location}</span>
-                </div>
-                <div class="confirmation-details-item">
-                    <span class="confirmation-details-label">Urgency</span>
-                    <span class="confirmation-details-value">${formData.urgency.charAt(0).toUpperCase() + formData.urgency.slice(1)}</span>
-                </div>
-            `;
-
-            console.log('Survey submitted:', formData);
-            console.log('Request created for agent:', newRequest);
-            
-            showScreen('confirmation');
         }
 
         // Task Tab Switching
-        function switchTaskTab(tab) {
+        function switchTaskTab(tab, event) {
             currentTaskTab = tab;
             document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            event.target.classList.add('active');
+            if (event && event.target) {
+                event.target.classList.add('active');
+            } else {
+                // Fallback: find the button by tab value
+                document.querySelectorAll('.tab').forEach(btn => {
+                    if (btn.textContent.trim().toLowerCase().includes(tab === 'current' ? 'current' : 'past')) {
+                        btn.classList.add('active');
+                    }
+                });
+            }
             renderTasks();
         }
 
@@ -5654,18 +5762,47 @@
         async function renderTasks() {
             const container = document.getElementById('tasks-container');
             
-            // Get current user's email
-            const userData = await sessionDB.get('homefix_user') || {};
-            const userEmail = userData.email;
+            if (!container) {
+                console.error('Tasks container not found');
+                return;
+            }
             
-            if (!userEmail) {
+            // Get current user - must be logged in
+            const currentUser = firebaseAuth.getCurrentUser();
+            
+            if (!currentUser || !currentUser.uid) {
+                console.error('❌ No user logged in');
                 container.innerHTML = '<div style="text-align: center; padding: 60px; color: var(--neutral-500); font-size: 18px;">Please sign in to view your requests</div>';
                 return;
             }
             
-            // Load user's actual requests from Firestore
-            const result = await firebaseRequests.getUserRequests(userEmail);
-            const userRequests = result.success ? result.data : [];
+            console.log('👤 Current user UID:', currentUser.uid);
+            
+            // Show loading state
+            container.innerHTML = '<div style="text-align: center; padding: 60px; color: var(--neutral-500); font-size: 18px;">Loading your requests...</div>';
+            
+            // Load user's actual requests from Firestore using UID
+            console.log('🔍 Fetching requests for user UID:', currentUser.uid);
+            const result = await firebaseRequests.getUserRequests(currentUser.uid);
+            console.log('📦 getUserRequests result:', {
+                success: result.success,
+                count: result.data ? result.data.length : 0,
+                error: result.error
+            });
+            
+            if (!result.success) {
+                console.error('❌ Error loading requests:', result.error);
+                container.innerHTML = `<div style="text-align: center; padding: 60px; color: var(--error-500); font-size: 18px;">Error loading requests: ${result.error}</div>`;
+                return;
+            }
+            
+            const userRequests = result.data || [];
+            console.log(`📋 User requests found: ${userRequests.length}`, userRequests.map(r => ({
+                id: r.id,
+                service: r.service,
+                status: r.status,
+                clientEmail: r.clientEmail
+            })));
             
             // Convert Firestore timestamps to dates
             userRequests.forEach(request => {
@@ -5678,19 +5815,46 @@
                 }
             });
             
-            // Filter by tab (current = pending/assigned, past = completed)
+            // Filter by tab (current = pending/assigned, past = completed or has invoice)
             let filteredRequests = [];
+            console.log(`🔀 Filtering requests. Current tab: "${currentTaskTab}"`);
+            console.log('📋 All user requests:', userRequests.map(r => ({ 
+                id: r.id, 
+                service: r.service, 
+                status: r.status, 
+                hasInvoice: !!r.invoice,
+                clientEmail: r.clientEmail 
+            })));
+            
             if (currentTaskTab === 'current') {
-                filteredRequests = userRequests.filter(r => r.status === 'pending' || r.status === 'assigned');
+                // Current tasks: pending or assigned (but not completed and not invoiced)
+                filteredRequests = userRequests.filter(r => {
+                    const isCurrent = (r.status === 'pending' || r.status === 'assigned') && !r.invoice;
+                    if (isCurrent) {
+                        console.log(`✅ Current task: ${r.id} - ${r.service} (${r.status})`);
+                    }
+                    return isCurrent;
+                });
             } else {
-                filteredRequests = userRequests.filter(r => r.status === 'completed');
+                // Past tasks: completed OR has invoice (invoiced requests are considered done)
+                filteredRequests = userRequests.filter(r => {
+                    const isPast = r.status === 'completed' || r.invoice;
+                    if (isPast) {
+                        console.log(`✅ Past task: ${r.id} - ${r.service} (${r.status}, invoice: ${!!r.invoice})`);
+                    }
+                    return isPast;
+                });
             }
+            
+            console.log(`📊 Filtered requests: ${filteredRequests.length} for "${currentTaskTab}" tab`);
             
             // Sort by date (newest first)
             filteredRequests.sort((a, b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date));
             
             if (filteredRequests.length === 0) {
-                container.innerHTML = `<div style="text-align: center; padding: 60px; color: var(--neutral-500); font-size: 18px;">No ${currentTaskTab === 'current' ? 'active' : 'completed'} requests found</div>`;
+                const message = `No ${currentTaskTab === 'current' ? 'active' : 'completed'} requests found. Total requests: ${userRequests.length}`;
+                console.log(message);
+                container.innerHTML = `<div style="text-align: center; padding: 60px; color: var(--neutral-500); font-size: 18px;">${message}</div>`;
                 return;
             }
 
@@ -5709,36 +5873,55 @@
                             <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--neutral-500);">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
                             </svg>
-                            ${request.date}
+                            ${request.date || 'N/A'}
                         </div>
                         <div class="task-card-row">
                             <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--neutral-500);">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path>
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
                             </svg>
-                            ${request.location}
+                            ${request.location || 'Location not specified'}
                         </div>
+                        ${request.description ? `
+                        <div style="padding: var(--spacing-sm) 0; color: var(--neutral-600); font-size: 14px; border-top: 1px solid var(--neutral-200); margin-top: var(--spacing-sm); padding-top: var(--spacing-sm);">
+                            ${request.description.length > 100 ? request.description.substring(0, 100) + '...' : request.description}
+                        </div>
+                        ` : ''}
                         ${request.provider ? `
-                        <div class="task-assignee">
-                            <img src="images/person.png" alt="${request.provider.name}" class="task-avatar">
-                            <div>
-                                <div class="assignee-name">${request.provider.name}</div>
-                                <div style="font-size: 13px; color: var(--neutral-500);">${request.provider.specialization}</div>
+                        <div style="padding: var(--spacing-md); background: var(--primary-50); border-radius: var(--radius-md); margin-top: var(--spacing-md); border-left: 4px solid var(--primary-500);">
+                            <div style="display: flex; align-items: center; gap: var(--spacing-sm); margin-bottom: var(--spacing-xs);">
+                                <img src="images/person.png" alt="${request.provider.name}" class="task-avatar" style="width: 32px; height: 32px; border-radius: 50%;">
+                                <div style="flex: 1;">
+                                    <div style="font-weight: 600; color: var(--primary-700);">${request.provider.name}</div>
+                                    <div style="font-size: 13px; color: var(--neutral-600);">${request.provider.specialization}</div>
+                                </div>
+                            </div>
+                            <div style="font-size: 13px; color: var(--neutral-600); margin-top: var(--spacing-xs);">
+                                📞 ${request.provider.phone} | ✉️ ${request.provider.email}
                             </div>
                         </div>
                         ` : request.status === 'pending' ? `
-                        <div style="padding: var(--spacing-md); background: var(--neutral-50); border-radius: var(--radius-md); margin-top: var(--spacing-md);">
+                        <div style="padding: var(--spacing-md); background: var(--neutral-50); border-radius: var(--radius-md); margin-top: var(--spacing-md); border-left: 4px solid var(--neutral-400);">
                             <div style="font-size: 14px; color: var(--neutral-600);">⏳ Waiting for provider assignment...</div>
                         </div>
                         ` : ''}
                         ${request.invoice ? `
-                        <div style="padding: var(--spacing-md); background: var(--success-500); background: #F0FDF4; border: 1px solid #86EFAC; border-radius: var(--radius-md); margin-top: var(--spacing-md);">
-                            <div style="font-size: 14px; color: #166534; font-weight: 600;">💰 Invoice Total: ₵${request.invoice.total.toFixed(2)}</div>
+                        <div style="padding: var(--spacing-md); background: linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%); border: 2px solid #86EFAC; border-radius: var(--radius-md); margin-top: var(--spacing-md);">
+                            <div style="display: flex; justify-content: space-between; align-items: center;">
+                                <div>
+                                    <div style="font-size: 12px; color: #166534; font-weight: 600; text-transform: uppercase; margin-bottom: var(--spacing-xs);">Invoice Available</div>
+                                    <div style="font-size: 20px; color: #166534; font-weight: 800;">₵${request.invoice.total.toFixed(2)}</div>
+                                    <div style="font-size: 12px; color: #166534; margin-top: var(--spacing-xs);">Invoice ID: ${request.invoice.id || 'N/A'}</div>
+                                </div>
+                                <div style="font-size: 32px;">💰</div>
+                            </div>
                         </div>
                         ` : ''}
                     </div>
-                    <div class="task-card-footer">
-                        <button class="btn-text" onclick="viewUserRequest(${request.id})">${request.invoice ? 'View Invoice' : 'View Details'}</button>
+                    <div class="task-card-footer" style="display: flex; gap: var(--spacing-sm);">
+                        <button class="btn-text" onclick="viewUserRequest('${request.id}')" style="flex: 1; text-align: center;">
+                            ${request.invoice ? '📄 View Invoice & Details' : '👁️ View Details'}
+                        </button>
                     </div>
                 </div>
             `;
@@ -5747,15 +5930,16 @@
 
         // View User Request (new function for actual user requests)
         async function viewUserRequest(requestId) {
-            const userData = await sessionDB.get('homefix_user') || {};
-            const userEmail = userData.email;
+            // Check if user is logged in using Firebase auth
+            const currentUser = firebaseAuth.getCurrentUser();
             
-            if (!userEmail) {
+            if (!currentUser || !currentUser.uid) {
                 alert('Please sign in to view request details.');
                 return;
             }
             
-            const result = await firebaseRequests.getRequest(requestId);
+            const id = typeof requestId === 'string' ? requestId : String(requestId);
+            const result = await firebaseRequests.getRequest(id);
             
             if (!result.success || !result.data) {
                 alert('Request not found.');
@@ -5774,7 +5958,7 @@
             }
             
             if (request.invoice) {
-                // Show invoice
+                // Show invoice with full details
                 showUserInvoice(request);
             } else {
                 // Show request details
@@ -5785,28 +5969,32 @@
         // Show User Request Detail
         function showUserRequestDetail(request) {
             let message = `📋 REQUEST DETAILS\n`;
-            message += `${'='.repeat(50)}\n\n`;
-            message += `Service: ${request.service}\n`;
-            message += `Date: ${request.date}\n`;
-            message += `Location: ${request.location}\n`;
+            message += `${'='.repeat(60)}\n\n`;
+            message += `Service: ${request.service || 'N/A'}\n`;
+            message += `Date: ${request.date || 'N/A'}\n`;
+            message += `Location: ${request.location || 'N/A'}\n`;
             if (request.preferredTime) {
                 message += `Preferred Time: ${request.preferredTime}\n`;
             }
             if (request.urgency) {
                 message += `Urgency: ${request.urgency.charAt(0).toUpperCase() + request.urgency.slice(1)}\n`;
             }
-            message += `\nDescription:\n${request.description}\n`;
-            message += `\n${'-'.repeat(50)}\n`;
+            message += `\nDescription:\n${request.description || 'No description provided'}\n`;
+            message += `\n${'-'.repeat(60)}\n`;
             message += `Status: ${request.status.toUpperCase()}\n`;
             
             if (request.provider) {
-                message += `\n${'='.repeat(50)}\n`;
+                message += `\n${'='.repeat(60)}\n`;
                 message += `👤 ASSIGNED PROVIDER\n`;
-                message += `${'-'.repeat(50)}\n`;
+                message += `${'-'.repeat(60)}\n`;
                 message += `Name: ${request.provider.name}\n`;
                 message += `Email: ${request.provider.email}\n`;
                 message += `Phone: ${request.provider.phone}\n`;
                 message += `Specialization: ${request.provider.specialization}\n`;
+                if (request.provider.assignedAt) {
+                    const assignedDate = new Date(request.provider.assignedAt);
+                    message += `Assigned: ${assignedDate.toLocaleDateString()}\n`;
+                }
             } else {
                 message += `\n⏳ Provider assignment pending...\n`;
             }
@@ -5814,32 +6002,48 @@
             alert(message);
         }
         
-        // Show User Invoice
+        // Show User Invoice with full details
         function showUserInvoice(request) {
             const invoice = request.invoice;
-            let message = `📄 INVOICE\n`;
-            message += `${'='.repeat(50)}\n\n`;
-            message += `Invoice ID: ${invoice.id}\n`;
-            message += `Service: ${request.service}\n`;
-            message += `Date: ${invoice.date} ${invoice.time || ''}\n`;
-            message += `\n${'-'.repeat(50)}\n`;
-            message += `ITEMS:\n`;
-            message += `${'-'.repeat(50)}\n\n`;
-            
-            invoice.items.forEach((item, index) => {
-                message += `${index + 1}. ${item.description}\n`;
-                message += `   Quantity: ${item.quantity}\n`;
-                message += `   Unit Price: ₵${item.price.toFixed(2)}\n`;
-                message += `   Subtotal: ₵${item.total.toFixed(2)}\n\n`;
-            });
-            
-            message += `${'-'.repeat(50)}\n`;
-            message += `TOTAL: ₵${invoice.total.toFixed(2)}\n`;
-            message += `${'='.repeat(50)}\n`;
+            let message = `📄 INVOICE DETAILS\n`;
+            message += `${'='.repeat(60)}\n\n`;
+            message += `Invoice ID: ${invoice.id || 'N/A'}\n`;
+            message += `Service: ${request.service || 'N/A'}\n`;
+            message += `Date: ${invoice.date || 'N/A'} ${invoice.time || ''}\n`;
+            message += `Status: ${invoice.status ? invoice.status.toUpperCase() : 'SENT'}\n`;
             
             if (request.provider) {
-                message += `\nProvider: ${request.provider.name}\n`;
+                message += `\n${'-'.repeat(60)}\n`;
+                message += `👤 ASSIGNED PROVIDER\n`;
+                message += `${'-'.repeat(60)}\n`;
+                message += `Name: ${request.provider.name}\n`;
+                message += `Email: ${request.provider.email}\n`;
                 message += `Phone: ${request.provider.phone}\n`;
+                message += `Specialization: ${request.provider.specialization}\n`;
+            }
+            
+            message += `\n${'='.repeat(60)}\n`;
+            message += `INVOICE ITEMS\n`;
+            message += `${'-'.repeat(60)}\n\n`;
+            
+            if (invoice.items && invoice.items.length > 0) {
+                invoice.items.forEach((item, index) => {
+                    message += `${index + 1}. ${item.description || 'N/A'}\n`;
+                    message += `   Quantity: ${item.quantity || 0}\n`;
+                    message += `   Unit Price: ₵${(item.price || 0).toFixed(2)}\n`;
+                    message += `   Subtotal: ₵${(item.total || 0).toFixed(2)}\n\n`;
+                });
+            } else {
+                message += `No items found in invoice.\n\n`;
+            }
+            
+            message += `${'-'.repeat(60)}\n`;
+            message += `TOTAL AMOUNT: ₵${(invoice.total || 0).toFixed(2)}\n`;
+            message += `${'='.repeat(60)}\n`;
+            
+            if (invoice.sentAt) {
+                const sentDate = new Date(invoice.sentAt);
+                message += `\nSent: ${sentDate.toLocaleDateString()} ${sentDate.toLocaleTimeString()}\n`;
             }
             
             alert(message);
@@ -6067,54 +6271,77 @@
 
         function hideAddPaymentMethod() {
             document.getElementById('add-payment-section').style.display = 'none';
-            document.getElementById('card-number').value = '';
-            document.getElementById('card-expiry').value = '';
-            document.getElementById('card-cvv').value = '';
-            document.getElementById('card-name').value = '';
+            document.getElementById('mobile-money-provider').value = '';
+            document.getElementById('mobile-money-number').value = '';
+            document.getElementById('mobile-money-name').value = '';
             document.getElementById('set-default').checked = false;
         }
 
         function addPaymentMethod(event) {
             event.preventDefault();
-            const cardNumber = document.getElementById('card-number').value;
-            const cardExpiry = document.getElementById('card-expiry').value;
-            const cardCvv = document.getElementById('card-cvv').value;
-            const cardName = document.getElementById('card-name').value;
+            const provider = document.getElementById('mobile-money-provider').value;
+            const phoneNumber = document.getElementById('mobile-money-number').value.trim();
+            const accountName = document.getElementById('mobile-money-name').value.trim();
             const isDefault = document.getElementById('set-default').checked;
 
-            // Simple validation
-            if (cardNumber.length < 13) {
-                alert('Please enter a valid card number');
+            // Validation
+            if (!provider) {
+                alert('Please select a mobile money provider');
+                return;
+            }
+            
+            if (!phoneNumber || phoneNumber.length < 9) {
+                alert('Please enter a valid phone number');
+                return;
+            }
+            
+            if (!accountName) {
+                alert('Please enter the account holder name');
                 return;
             }
 
+            // Provider display names and icons
+            const providerInfo = {
+                'mtn': { name: 'MTN Mobile Money', icon: '📱', color: '#FFC107' },
+                'telecel': { name: 'Telecel Cash', icon: '📱', color: '#E91E63' },
+                'airtel-tigo': { name: 'AirtelTigo Money', icon: '📱', color: '#E60012' }
+            };
+            
+            const providerData = providerInfo[provider];
+            const maskedNumber = phoneNumber.replace(/(\d{3})\d+(\d{3})/, '$1***$2');
+
             // Add to payment methods list (in real app, this would be sent to server)
-            const last4 = cardNumber.slice(-4);
             const paymentMethodsList = document.getElementById('payment-methods-list');
-            const newCard = document.createElement('div');
-            newCard.className = 'payment-method-card';
-            newCard.innerHTML = `
+            const newMethod = document.createElement('div');
+            newMethod.className = 'payment-method-card';
+            newMethod.innerHTML = `
                 <div class="payment-method-info">
-                    <div class="payment-method-icon">
-                        <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
-                        </svg>
+                    <div class="payment-method-icon" style="background: ${providerData.color}20; color: ${providerData.color};">
+                        <span style="font-size: 24px;">${providerData.icon}</span>
                     </div>
                     <div class="payment-method-details">
-                        <div class="payment-method-name">Card •••• ${last4}</div>
-                        <div class="payment-method-number">Expires ${cardExpiry}</div>
+                        <div class="payment-method-name">${providerData.name}</div>
+                        <div class="payment-method-number">${maskedNumber} • ${accountName}</div>
                     </div>
                 </div>
                 <div class="payment-method-actions">
                     ${isDefault ? '<span class="payment-method-badge">Default</span>' : ''}
-                    <button class="btn btn-ghost" style="padding: var(--spacing-xs) var(--spacing-md);" onclick="alert(\'Edit card\')">Edit</button>
+                    <button class="btn btn-ghost" style="padding: var(--spacing-xs) var(--spacing-md);" onclick="alert(\'Edit mobile money account\')">Edit</button>
                     <button class="btn btn-ghost" style="padding: var(--spacing-xs) var(--spacing-md);" onclick="this.closest(\'.payment-method-card\').remove()">Remove</button>
                 </div>
             `;
-            paymentMethodsList.appendChild(newCard);
+            
+            // If this is set as default, remove default badge from others
+            if (isDefault) {
+                paymentMethodsList.querySelectorAll('.payment-method-badge').forEach(badge => {
+                    badge.remove();
+                });
+            }
+            
+            paymentMethodsList.appendChild(newMethod);
 
-            console.log('Payment method added:', { cardNumber, cardExpiry, cardName, isDefault });
-            alert('Payment method added successfully!');
+            console.log('Payment method added:', { provider, phoneNumber, accountName, isDefault });
+            alert('Mobile money account added successfully!');
             hideAddPaymentMethod();
         }
 
@@ -6926,43 +7153,61 @@
                         </form>
                     </div>
                     <div class="invoice-section" id="invoice-form-${request.id}">
-                        <div style="background: var(--primary-50); padding: var(--spacing-md); border-radius: var(--radius-md); margin-bottom: var(--spacing-lg);">
-                            <h4 style="margin: 0 0 var(--spacing-sm) 0; font-size: 18px; font-weight: 600; color: var(--primary-700);">Create Invoice</h4>
-                            <p style="margin: 0; font-size: 14px; color: var(--neutral-600);">
-                                Client: <strong>${request.clientName || 'N/A'}</strong> | 
-                                Email: <strong>${request.clientEmail || 'N/A'}</strong> | 
-                                Service: <strong>${request.service || 'N/A'}</strong>
-                            </p>
+                        <div style="background: linear-gradient(135deg, var(--primary-500) 0%, var(--primary-600) 100%); padding: var(--spacing-lg); border-radius: var(--radius-lg); margin-bottom: var(--spacing-lg); color: white;">
+                            <h4 style="margin: 0 0 var(--spacing-sm) 0; font-size: 20px; font-weight: 700;">📄 Create Invoice</h4>
+                            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: var(--spacing-sm); margin-top: var(--spacing-sm); font-size: 14px;">
+                                <div><strong>Client:</strong> ${request.clientName || 'N/A'}</div>
+                                <div><strong>Email:</strong> ${request.clientEmail || 'N/A'}</div>
+                                <div><strong>Service:</strong> ${request.service || 'N/A'}</div>
+                            </div>
                         </div>
                         <form id="invoice-form-submit-${request.id}">
-                            <div style="margin-bottom: var(--spacing-md);">
-                                <label class="form-label" style="font-weight: 600; margin-bottom: var(--spacing-sm); display: block;">Invoice Items</label>
-                                <div class="invoice-items" id="invoice-items-${request.id}">
-                                    <div class="invoice-item">
-                                        <input type="text" class="form-input" placeholder="Item Description" required style="flex: 2;">
-                                        <input type="number" class="form-input" placeholder="Qty" min="1" value="1" required oninput="updateInvoiceTotal('${request.id}')" style="flex: 0.8;">
-                                        <input type="number" class="form-input" placeholder="Unit Price (₵)" min="0" step="0.01" value="0" required oninput="updateInvoiceTotal('${request.id}')" style="flex: 1;">
-                                        <button type="button" class="btn btn-ghost" onclick="removeInvoiceItem(this)" style="padding: var(--spacing-xs); min-width: auto;">✕</button>
-                                    </div>
+                            <div style="background: var(--white); border: 1px solid var(--neutral-200); border-radius: var(--radius-md); padding: var(--spacing-lg); margin-bottom: var(--spacing-lg);">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: var(--spacing-md);">
+                                    <label class="form-label" style="font-weight: 700; font-size: 16px; margin: 0;">Invoice Items</label>
+                                    <button type="button" class="btn btn-ghost" onclick="addInvoiceItem('${request.id}')" style="padding: var(--spacing-xs) var(--spacing-sm); font-size: 14px;">
+                                        + Add Item
+                                    </button>
+                                </div>
+                                <div style="overflow-x: auto;">
+                                    <table style="width: 100%; border-collapse: collapse;">
+                                        <thead>
+                                            <tr style="background: var(--neutral-50); border-bottom: 2px solid var(--neutral-200);">
+                                                <th style="padding: var(--spacing-sm); text-align: left; font-weight: 600; font-size: 14px; color: var(--neutral-700);">Description</th>
+                                                <th style="padding: var(--spacing-sm); text-align: center; font-weight: 600; font-size: 14px; color: var(--neutral-700); width: 100px;">Quantity</th>
+                                                <th style="padding: var(--spacing-sm); text-align: right; font-weight: 600; font-size: 14px; color: var(--neutral-700); width: 120px;">Unit Price (₵)</th>
+                                                <th style="padding: var(--spacing-sm); text-align: right; font-weight: 600; font-size: 14px; color: var(--neutral-700); width: 120px;">Subtotal</th>
+                                                <th style="padding: var(--spacing-sm); text-align: center; font-weight: 600; font-size: 14px; color: var(--neutral-700); width: 60px;">Action</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="invoice-items-${request.id}">
+                                            <tr>
+                                                <td style="padding: var(--spacing-sm);"><input type="text" class="form-input invoice-desc" placeholder="Item description" required style="width: 100%; border: 1px solid var(--neutral-300);" oninput="updateInvoiceRowTotal(this, '${request.id}')"></td>
+                                                <td style="padding: var(--spacing-sm);"><input type="number" class="form-input invoice-qty" placeholder="Qty (optional)" min="0" value="1" style="width: 100%; border: 1px solid var(--neutral-300); text-align: center;" oninput="updateInvoiceRowTotal(this, '${request.id}')" onchange="updateInvoiceRowTotal(this, '${request.id}')"></td>
+                                                <td style="padding: var(--spacing-sm);"><input type="number" class="form-input invoice-price" placeholder="0.00" min="0" step="0.01" value="0" required style="width: 100%; border: 1px solid var(--neutral-300); text-align: right;" oninput="updateInvoiceRowTotal(this, '${request.id}')" onchange="updateInvoiceRowTotal(this, '${request.id}')"></td>
+                                                <td class="item-subtotal" style="padding: var(--spacing-sm); text-align: right; color: var(--neutral-600); font-weight: 600;">₵0.00</td>
+                                                <td style="padding: var(--spacing-sm); text-align: center;"><button type="button" class="btn btn-ghost" onclick="removeInvoiceItem(this)" style="padding: var(--spacing-xs); min-width: auto; color: var(--error-500);">✕</button></td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
-                            <button type="button" class="btn btn-ghost" onclick="addInvoiceItem('${request.id}')" style="margin-bottom: var(--spacing-lg); width: 100%;">
-                                + Add Another Item
-                            </button>
-                            <div class="invoice-total" style="background: var(--neutral-100); padding: var(--spacing-md); border-radius: var(--radius-md); margin-bottom: var(--spacing-lg); display: flex; justify-content: space-between; align-items: center; font-size: 18px; font-weight: 700;">
-                                <span style="color: var(--neutral-700);">Total Amount:</span>
-                                <span id="invoice-total-${request.id}" style="color: var(--primary-600); font-size: 24px;">₵0.00</span>
+                            <div style="background: var(--neutral-50); border: 2px solid var(--primary-200); padding: var(--spacing-lg); border-radius: var(--radius-md); margin-bottom: var(--spacing-lg);">
+                                <div style="display: flex; justify-content: space-between; align-items: center;">
+                                    <span style="font-size: 20px; font-weight: 700; color: var(--neutral-700);">Total Amount:</span>
+                                    <span id="invoice-total-${request.id}" style="color: var(--primary-600); font-size: 32px; font-weight: 800;">₵0.00</span>
+                                </div>
                             </div>
-                            <div class="request-actions" style="display: flex; gap: var(--spacing-md); margin-bottom: var(--spacing-md);">
-                                <button type="button" class="btn btn-primary" onclick="calculateInvoiceTotal('${request.id}')" style="flex: 1;">
-                                    ✓ Done (Calculate Total)
+                            <div style="display: flex; gap: var(--spacing-md);">
+                                <button type="button" class="btn btn-primary" onclick="calculateInvoiceTotal('${request.id}')" style="flex: 1; padding: var(--spacing-md); font-size: 16px; font-weight: 600;">
+                                    ✓ Calculate Total
                                 </button>
                                 <button type="button" class="btn btn-ghost" onclick="hideInvoiceForm('${request.id}')" style="flex: 0.5;">
                                     Cancel
                                 </button>
                             </div>
-                            <div class="request-actions" style="display: flex; gap: var(--spacing-md);">
-                                <button type="button" class="btn btn-primary send-invoice-btn" data-request-id="${request.id}" style="flex: 1; background: var(--success-600);">
+                            <div style="margin-top: var(--spacing-md);">
+                                <button type="button" class="btn btn-primary send-invoice-btn" data-request-id="${request.id}" style="width: 100%; padding: var(--spacing-md); font-size: 16px; font-weight: 600; background: var(--success-600);">
                                     📧 Send Invoice to Client
                                 </button>
                             </div>
@@ -7109,19 +7354,20 @@
             invoiceForm.classList.add('active');
             
             // Reset invoice form if it was previously filled
-            const itemsContainer = document.getElementById(`invoice-items-${id}`);
-            if (!itemsContainer) {
-                console.error('Items container not found:', id);
+            const tbody = document.getElementById(`invoice-items-${id}`);
+            if (!tbody) {
+                console.error('Invoice items table body not found:', id);
                 return;
             }
             
-            itemsContainer.innerHTML = `
-                <div class="invoice-item">
-                    <input type="text" class="form-input" placeholder="Item Description" required style="flex: 2;">
-                    <input type="number" class="form-input" placeholder="Qty" min="1" value="1" required oninput="updateInvoiceTotal('${id}')" style="flex: 0.8;">
-                    <input type="number" class="form-input" placeholder="Unit Price (₵)" min="0" step="0.01" value="0" required oninput="updateInvoiceTotal('${id}')" style="flex: 1;">
-                    <button type="button" class="btn btn-ghost" onclick="removeInvoiceItem(this)" style="padding: var(--spacing-xs); min-width: auto;">✕</button>
-                </div>
+            tbody.innerHTML = `
+                <tr>
+                    <td style="padding: var(--spacing-sm);"><input type="text" class="form-input invoice-desc" placeholder="Item description" required style="width: 100%; border: 1px solid var(--neutral-300);" oninput="updateInvoiceRowTotal(this, '${id}')"></td>
+                    <td style="padding: var(--spacing-sm);"><input type="number" class="form-input invoice-qty" placeholder="Qty (optional)" min="0" value="1" style="width: 100%; border: 1px solid var(--neutral-300); text-align: center;" oninput="updateInvoiceRowTotal(this, '${id}')" onchange="updateInvoiceRowTotal(this, '${id}')"></td>
+                    <td style="padding: var(--spacing-sm);"><input type="number" class="form-input invoice-price" placeholder="0.00" min="0" step="0.01" value="0" required style="width: 100%; border: 1px solid var(--neutral-300); text-align: right;" oninput="updateInvoiceRowTotal(this, '${id}')" onchange="updateInvoiceRowTotal(this, '${id}')"></td>
+                    <td class="item-subtotal" style="padding: var(--spacing-sm); text-align: right; color: var(--neutral-600); font-weight: 600;">₵0.00</td>
+                    <td style="padding: var(--spacing-sm); text-align: center;"><button type="button" class="btn btn-ghost" onclick="removeInvoiceItem(this)" style="padding: var(--spacing-xs); min-width: auto; color: var(--error-500);">✕</button></td>
+                </tr>
             `;
             
             // Reset total display
@@ -7197,67 +7443,105 @@
         }
 
         function addInvoiceItem(requestId) {
-            const container = document.getElementById(`invoice-items-${requestId}`);
-            if (!container) {
-                console.error('Items container not found:', requestId);
+            const id = typeof requestId === 'string' ? requestId : String(requestId);
+            const tbody = document.getElementById(`invoice-items-${id}`);
+            if (!tbody) {
+                console.error('Invoice items table body not found:', id);
                 return;
             }
             
-            const item = document.createElement('div');
-            item.className = 'invoice-item';
-            item.innerHTML = `
-                <input type="text" class="form-input" placeholder="Item Description" required style="flex: 2;">
-                <input type="number" class="form-input" placeholder="Qty" min="1" value="1" required oninput="updateInvoiceTotal('${requestId}')" style="flex: 0.8;">
-                <input type="number" class="form-input" placeholder="Unit Price (₵)" min="0" step="0.01" value="0" required oninput="updateInvoiceTotal('${requestId}')" style="flex: 1;">
-                <button type="button" class="btn btn-ghost" onclick="removeInvoiceItem(this)" style="padding: var(--spacing-xs); min-width: auto;">✕</button>
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td style="padding: var(--spacing-sm);"><input type="text" class="form-input invoice-desc" placeholder="Item description" required style="width: 100%; border: 1px solid var(--neutral-300);" oninput="updateInvoiceRowTotal(this, '${id}')"></td>
+                <td style="padding: var(--spacing-sm);"><input type="number" class="form-input invoice-qty" placeholder="Qty (optional)" min="0" value="1" style="width: 100%; border: 1px solid var(--neutral-300); text-align: center;" oninput="updateInvoiceRowTotal(this, '${id}')" onchange="updateInvoiceRowTotal(this, '${id}')"></td>
+                <td style="padding: var(--spacing-sm);"><input type="number" class="form-input invoice-price" placeholder="0.00" min="0" step="0.01" value="0" required style="width: 100%; border: 1px solid var(--neutral-300); text-align: right;" oninput="updateInvoiceRowTotal(this, '${id}')" onchange="updateInvoiceRowTotal(this, '${id}')"></td>
+                <td class="item-subtotal" style="padding: var(--spacing-sm); text-align: right; color: var(--neutral-600); font-weight: 600;">₵0.00</td>
+                <td style="padding: var(--spacing-sm); text-align: center;"><button type="button" class="btn btn-ghost" onclick="removeInvoiceItem(this)" style="padding: var(--spacing-xs); min-width: auto; color: var(--error-500);">✕</button></td>
             `;
-            container.appendChild(item);
+            tbody.appendChild(row);
             
             // Update total after adding item
             setTimeout(() => {
-                updateInvoiceTotal(requestId);
+                updateInvoiceTotal(id);
             }, 50);
         }
 
         function removeInvoiceItem(button) {
-            const item = button.closest('.invoice-item');
-            if (!item) return;
+            const row = button.closest('tr');
+            if (!row) return;
             
-            const itemsContainer = item.parentElement;
-            const allItems = itemsContainer.querySelectorAll('.invoice-item');
+            const tbody = row.parentElement;
+            const allRows = tbody.querySelectorAll('tr');
             
             // Don't allow removing the last item
-            if (allItems.length <= 1) {
+            if (allRows.length <= 1) {
                 alert('Invoice must have at least one item.');
                 return;
             }
             
-            item.remove();
+            row.remove();
             const requestId = button.closest('.invoice-section').id.replace('invoice-form-', '');
             updateInvoiceTotal(requestId);
         }
 
+        // Update individual row subtotal and total
+        function updateInvoiceRowTotal(inputElement, requestId) {
+            const id = typeof requestId === 'string' ? requestId : String(requestId);
+            const row = inputElement.closest('tr');
+            if (!row) return;
+            
+            const quantityInput = row.querySelector('.invoice-qty');
+            const priceInput = row.querySelector('.invoice-price');
+            const subtotalCell = row.querySelector('.item-subtotal');
+            
+            if (!priceInput || !subtotalCell) return;
+            
+            // Get values - quantity is optional (for service fees)
+            const quantity = quantityInput ? (parseFloat(quantityInput.value) || 0) : 1;
+            const price = parseFloat(priceInput.value) || 0;
+            
+            // If quantity is 0 or empty, treat as service fee (quantity = 1)
+            const effectiveQuantity = quantity > 0 ? quantity : 1;
+            const subtotal = effectiveQuantity * price;
+            
+            // Update subtotal cell
+            subtotalCell.textContent = `₵${subtotal.toFixed(2)}`;
+            
+            // Update total
+            updateInvoiceTotal(id);
+        }
+        
         function updateInvoiceTotal(requestId) {
             try {
                 // Handle both string and number requestId
                 const id = typeof requestId === 'string' ? requestId : String(requestId);
-                const itemsContainer = document.getElementById(`invoice-items-${id}`);
-                if (!itemsContainer) {
-                    console.warn('Items container not found for updateInvoiceTotal:', id);
+                const tbody = document.getElementById(`invoice-items-${id}`);
+                if (!tbody) {
+                    console.warn('Invoice items table body not found for updateInvoiceTotal:', id);
                     return;
                 }
                 
-                const items = itemsContainer.querySelectorAll('.invoice-item');
+                const rows = tbody.querySelectorAll('tr');
                 let total = 0;
                 
-                items.forEach(item => {
-                    const quantityInput = item.querySelector('input[type="number"]:nth-of-type(1)');
-                    const priceInput = item.querySelector('input[type="number"]:nth-of-type(2)');
+                rows.forEach(row => {
+                    const quantityInput = row.querySelector('.invoice-qty');
+                    const priceInput = row.querySelector('.invoice-price');
+                    const subtotalCell = row.querySelector('.item-subtotal');
                     
-                    if (quantityInput && priceInput) {
-                        const quantity = parseFloat(quantityInput.value) || 0;
+                    if (priceInput) {
+                        const quantity = quantityInput ? (parseFloat(quantityInput.value) || 0) : 1;
                         const price = parseFloat(priceInput.value) || 0;
-                        total += quantity * price;
+                        
+                        // If quantity is 0 or empty, treat as service fee (quantity = 1)
+                        const effectiveQuantity = quantity > 0 ? quantity : 1;
+                        const subtotal = effectiveQuantity * price;
+                        total += subtotal;
+                        
+                        // Update subtotal cell if not already updated
+                        if (subtotalCell && !subtotalCell.textContent.includes('₵')) {
+                            subtotalCell.textContent = `₵${subtotal.toFixed(2)}`;
+                        }
                     }
                 });
                 
@@ -7279,16 +7563,16 @@
         // Calculate and display invoice total with validation
         function calculateInvoiceTotal(requestId) {
             const id = typeof requestId === 'string' ? requestId : String(requestId);
-            const itemsContainer = document.getElementById(`invoice-items-${id}`);
+            const tbody = document.getElementById(`invoice-items-${id}`);
             
-            if (!itemsContainer) {
+            if (!tbody) {
                 alert('Error: Invoice form not found. Please refresh the page.');
                 return;
             }
             
-            const items = itemsContainer.querySelectorAll('.invoice-item');
+            const rows = tbody.querySelectorAll('tr');
             
-            if (items.length === 0) {
+            if (rows.length === 0) {
                 alert('Please add at least one invoice item before calculating the total.');
                 return;
             }
@@ -7297,37 +7581,46 @@
             let hasErrors = false;
             let errorMessages = [];
             
-            items.forEach((item, index) => {
-                const descriptionInput = item.querySelector('input[type="text"]');
-                const quantityInput = item.querySelector('input[type="number"]:nth-of-type(1)');
-                const priceInput = item.querySelector('input[type="number"]:nth-of-type(2)');
+            rows.forEach((row, index) => {
+                const descriptionInput = row.querySelector('.invoice-desc');
+                const quantityInput = row.querySelector('.invoice-qty');
+                const priceInput = row.querySelector('.invoice-price');
+                const subtotalCell = row.querySelector('.item-subtotal');
                 
-                if (!descriptionInput || !quantityInput || !priceInput) {
+                if (!descriptionInput || !priceInput) {
                     return;
                 }
                 
                 const description = descriptionInput.value.trim();
-                const quantityStr = quantityInput.value.trim();
+                const quantityStr = quantityInput ? quantityInput.value.trim() : '';
                 const priceStr = priceInput.value.trim();
                 
-                // Check for empty fields
-                if (!description || !quantityStr || !priceStr) {
+                // Check for required fields (description and price are required)
+                if (!description || !priceStr) {
                     hasErrors = true;
-                    errorMessages.push(`Item ${index + 1}: Please fill in all fields (description, quantity, and price).`);
+                    errorMessages.push(`Row ${index + 1}: Please fill in description and price.`);
                     return;
                 }
                 
-                const quantity = parseFloat(quantityStr);
+                const quantity = quantityStr ? parseFloat(quantityStr) : 1; // Default to 1 if empty (service fee)
                 const price = parseFloat(priceStr);
                 
-                // Validate values
-                if (isNaN(quantity) || isNaN(price) || quantity <= 0 || price <= 0) {
+                // Validate price (must be greater than 0)
+                if (isNaN(price) || price <= 0) {
                     hasErrors = true;
-                    errorMessages.push(`Item ${index + 1}: Please enter valid quantity and price (must be greater than 0).`);
+                    errorMessages.push(`Row ${index + 1}: Please enter a valid price (must be greater than 0).`);
                     return;
                 }
                 
-                total += quantity * price;
+                // Quantity is optional - if 0 or empty, treat as service fee (quantity = 1)
+                const effectiveQuantity = quantity > 0 ? quantity : 1;
+                const subtotal = effectiveQuantity * price;
+                total += subtotal;
+                
+                // Update subtotal cell
+                if (subtotalCell) {
+                    subtotalCell.textContent = `₵${subtotal.toFixed(2)}`;
+                }
             });
             
             // Update the total display
@@ -7390,10 +7683,10 @@
             console.log('createInvoice called with requestId:', id, 'type:', typeof id);
             
             const items = [];
-            const itemsContainer = document.getElementById(`invoice-items-${id}`);
+            const tbody = document.getElementById(`invoice-items-${id}`);
             
-            if (!itemsContainer) {
-                console.error('Items container not found:', `invoice-items-${id}`);
+            if (!tbody) {
+                console.error('Invoice items table body not found:', `invoice-items-${id}`);
                 alert('Error: Invoice form not found. Please refresh the page and try again.');
                 // Re-enable button on error
                 const button = document.querySelector(`[data-request-id="${id}"].send-invoice-btn`);
@@ -7404,10 +7697,10 @@
                 return;
             }
             
-            const itemElements = itemsContainer.querySelectorAll('.invoice-item');
-            console.log('Found invoice items:', itemElements.length);
+            const rows = tbody.querySelectorAll('tr');
+            console.log('Found invoice items:', rows.length);
             
-            if (itemElements.length === 0) {
+            if (rows.length === 0) {
                 alert('Please add at least one invoice item.');
                 // Re-enable button on error
                 const button = document.querySelector(`[data-request-id="${id}"].send-invoice-btn`);
@@ -7418,43 +7711,46 @@
                 return;
             }
             
-            itemElements.forEach((item, index) => {
+            rows.forEach((row, index) => {
                 try {
-                    const descriptionInput = item.querySelector('input[type="text"]');
-                    const quantityInput = item.querySelector('input[type="number"]:nth-of-type(1)');
-                    const priceInput = item.querySelector('input[type="number"]:nth-of-type(2)');
+                    const descriptionInput = row.querySelector('.invoice-desc');
+                    const quantityInput = row.querySelector('.invoice-qty');
+                    const priceInput = row.querySelector('.invoice-price');
                     
-                    if (!descriptionInput || !quantityInput || !priceInput) {
-                        console.warn('Missing input fields in item', index);
+                    if (!descriptionInput || !priceInput) {
+                        console.warn('Missing required input fields in row', index);
                         return;
                     }
                     
                     const description = descriptionInput.value.trim();
-                    const quantityStr = quantityInput.value.trim();
+                    const quantityStr = quantityInput ? quantityInput.value.trim() : '';
                     const priceStr = priceInput.value.trim();
                     
-                    // Check if fields are empty
-                    if (!description || !quantityStr || !priceStr) {
-                        console.warn('Empty fields in item', index, { description, quantityStr, priceStr });
-                        return; // Skip items with empty fields
+                    // Check if required fields are empty (description and price are required)
+                    if (!description || !priceStr) {
+                        console.warn('Empty required fields in row', index, { description, priceStr });
+                        return; // Skip items with empty required fields
                     }
                     
-                    const quantity = parseFloat(quantityStr);
                     const price = parseFloat(priceStr);
                     
-                    // Check if values are valid numbers and greater than 0
-                    if (isNaN(quantity) || isNaN(price) || quantity <= 0 || price <= 0) {
-                        console.warn('Invalid values in item', index, { quantity, price });
+                    // Check if price is valid and greater than 0
+                    if (isNaN(price) || price <= 0) {
+                        console.warn('Invalid price in row', index, { price });
                         return; // Skip invalid items
                     }
                     
-                    console.log(`Item ${index}:`, { description, quantity, price });
+                    // Quantity is optional - if empty or 0, treat as service fee (quantity = 1)
+                    const quantity = quantityStr ? parseFloat(quantityStr) : 1;
+                    const effectiveQuantity = quantity > 0 ? quantity : 1;
+                    
+                    console.log(`Item ${index}:`, { description, quantity: effectiveQuantity, price });
                     
                     items.push({ 
                         description, 
-                        quantity, 
+                        quantity: effectiveQuantity, 
                         price, 
-                        total: quantity * price 
+                        total: effectiveQuantity * price 
                     });
                 } catch (error) {
                     console.error('Error processing item', index, ':', error);
@@ -7462,7 +7758,7 @@
             });
             
             if (items.length === 0) {
-                alert('Please fill in all invoice item fields correctly. All items must have a description, quantity, and price.');
+                alert('Please fill in all invoice item fields correctly. All items must have a description and price. Quantity is optional (leave empty for service fees).');
                 // Re-enable button on error
                 const button = document.querySelector(`[data-request-id="${id}"].send-invoice-btn`);
                 if (button) {
