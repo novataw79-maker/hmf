@@ -5268,7 +5268,7 @@
         }
 
         // Screen Navigation
-        function showScreen(screen) {
+        async function showScreen(screen) {
             // Hide all screens
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             
@@ -5280,8 +5280,89 @@
                 renderTasks();
             }
             
+            // Load profile data when profile screen is shown
+            if (screen === 'profile') {
+                await loadProfileData();
+            }
+            
+            // Load personal info when personal-info screen is shown
+            if (screen === 'personal-info') {
+                await loadPersonalInfo();
+            }
+            
             // Scroll to top
             window.scrollTo(0, 0);
+        }
+        
+        // Load profile data from Firestore
+        async function loadProfileData() {
+            try {
+                const currentUser = firebaseAuth.getCurrentUser();
+                if (!currentUser) {
+                    console.warn('No user logged in');
+                    return;
+                }
+                
+                const userDataResult = await firebaseUsers.getUser(currentUser.uid);
+                if (userDataResult.success) {
+                    const userData = userDataResult.data;
+                    
+                    // Update profile display
+                    const profileName = document.querySelector('.profile-name');
+                    const profileEmail = document.querySelector('.profile-email');
+                    
+                    if (profileName) {
+                        profileName.textContent = userData.name || 'User';
+                    }
+                    if (profileEmail) {
+                        profileEmail.textContent = userData.email || 'user@example.com';
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading profile data:', error);
+            }
+        }
+        
+        // Load personal info into form
+        async function loadPersonalInfo() {
+            try {
+                const currentUser = firebaseAuth.getCurrentUser();
+                if (!currentUser) {
+                    console.warn('No user logged in');
+                    return;
+                }
+                
+                const userDataResult = await firebaseUsers.getUser(currentUser.uid);
+                if (userDataResult.success) {
+                    const userData = userDataResult.data;
+                    
+                    // Split name into first and last name
+                    const nameParts = (userData.name || '').split(' ');
+                    const firstName = nameParts[0] || '';
+                    const lastName = nameParts.slice(1).join(' ') || '';
+                    
+                    // Populate form fields
+                    const firstNameInput = document.getElementById('first-name');
+                    const lastNameInput = document.getElementById('last-name');
+                    const emailInput = document.getElementById('email');
+                    const phoneInput = document.getElementById('phone');
+                    const addressInput = document.getElementById('address');
+                    const cityInput = document.getElementById('city');
+                    const stateInput = document.getElementById('state');
+                    const countryInput = document.getElementById('country');
+                    
+                    if (firstNameInput) firstNameInput.value = firstName;
+                    if (lastNameInput) lastNameInput.value = lastName;
+                    if (emailInput) emailInput.value = userData.email || '';
+                    if (phoneInput) phoneInput.value = userData.phone || '';
+                    if (addressInput) addressInput.value = userData.address || '';
+                    if (cityInput) cityInput.value = userData.city || '';
+                    if (stateInput) stateInput.value = userData.state || '';
+                    if (countryInput) countryInput.value = userData.country || '';
+                }
+            } catch (error) {
+                console.error('Error loading personal info:', error);
+            }
         }
 
         // Render Categories
@@ -5884,21 +5965,74 @@
             document.getElementById('avatar-preview').src = "images/person.png";
         }
 
-        function savePersonalInfo(event) {
+        async function savePersonalInfo(event) {
             event.preventDefault();
-            const data = {
-                firstName: document.getElementById('first-name').value,
-                lastName: document.getElementById('last-name').value,
-                email: document.getElementById('email').value,
-                phone: document.getElementById('phone').value,
-                address: document.getElementById('address').value,
-                city: document.getElementById('city').value,
-                state: document.getElementById('state').value,
-                country: document.getElementById('country').value
+            
+            const currentUser = firebaseAuth.getCurrentUser();
+            if (!currentUser) {
+                alert('You must be logged in to update your profile.');
+                return;
+            }
+            
+            const firstName = document.getElementById('first-name').value.trim();
+            const lastName = document.getElementById('last-name').value.trim();
+            const email = document.getElementById('email').value.trim();
+            const phone = document.getElementById('phone').value.trim();
+            const address = document.getElementById('address').value.trim();
+            const city = document.getElementById('city').value.trim();
+            const state = document.getElementById('state').value.trim();
+            const country = document.getElementById('country').value.trim();
+            
+            // Validation
+            if (!firstName || !lastName || !email) {
+                alert('Please fill in all required fields (First Name, Last Name, Email).');
+                return;
+            }
+            
+            // Combine first and last name
+            const fullName = `${firstName} ${lastName}`.trim();
+            
+            const updateData = {
+                name: fullName,
+                email: email,
+                phone: phone || '',
+                address: address || '',
+                city: city || '',
+                state: state || '',
+                country: country || '',
+                updatedAt: firebase.firestore.FieldValue.serverTimestamp()
             };
-            console.log('Personal info saved:', data);
-            alert('Personal information updated successfully!');
-            showScreen('profile');
+            
+            try {
+                // Update in Firestore
+                const result = await firebaseUsers.updateUser(currentUser.uid, updateData);
+                
+                if (result.success) {
+                    // Update local session
+                    await sessionDB.set('homefix_user', {
+                        uid: currentUser.uid,
+                        name: fullName,
+                        email: email,
+                        phone: phone
+                    });
+                    
+                    // Update profile display
+                    const profileName = document.querySelector('.profile-name');
+                    const profileEmail = document.querySelector('.profile-email');
+                    
+                    if (profileName) profileName.textContent = fullName;
+                    if (profileEmail) profileEmail.textContent = email;
+                    
+                    alert('Personal information updated successfully!');
+                    showScreen('profile');
+                } else {
+                    alert('Failed to update profile. Please try again.');
+                    console.error('Update error:', result.error);
+                }
+            } catch (error) {
+                console.error('Error saving personal info:', error);
+                alert('An error occurred while saving. Please try again.');
+            }
         }
 
         // Account & Security
@@ -6156,7 +6290,10 @@
                 if (authContainer) authContainer.classList.add('hidden');
                 if (agentContainer) agentContainer.classList.add('hidden');
                 if (agentDashboard) agentDashboard.classList.remove('active');
-                if (mainContent) mainContent.classList.remove('authenticated');
+                if (mainContent) {
+                    mainContent.classList.remove('authenticated');
+                    mainContent.style.display = 'none'; // Explicitly hide main content
+                }
             }
         }
 
@@ -6470,9 +6607,26 @@
             await sessionDB.remove('homefix_authenticated');
             await sessionDB.remove('homefix_user');
             
+            // Explicitly hide main content and show landing page
+            const mainContent = document.getElementById('main-content');
+            const landingPage = document.getElementById('landing-page');
+            
+            if (mainContent) {
+                mainContent.classList.remove('authenticated');
+                mainContent.style.display = 'none'; // Explicitly hide
+            }
+            if (landingPage) {
+                landingPage.classList.remove('hidden');
+                landingPage.style.display = 'block'; // Ensure it's visible
+            }
+            
             // Clear forms
             document.getElementById('signin-form').reset();
             document.getElementById('register-form').reset();
+            
+            // Scroll to top
+            window.scrollTo(0, 0);
+            
             await checkAuthStatus();
         }
 
@@ -6540,56 +6694,34 @@
         }
 
         async function loadAgentRequests() {
-            // Load requests from Firestore
-            const result = await firebaseRequests.getAllRequests();
-            let requests = result.success ? result.data : [];
+            const refreshButton = document.querySelector('.section-header button');
+            const container = document.getElementById('requests-container');
             
-            // Convert Firestore timestamps to dates
-            requests.forEach(request => {
-                if (request.createdAt) {
-                    const date = convertTimestamp(request.createdAt);
-                    request.createdAt = date.toISOString();
-                    if (!request.date) {
-                        request.date = date.toLocaleDateString();
-                    }
-                }
-            });
+            // Show loading state
+            if (refreshButton) {
+                const originalText = refreshButton.textContent;
+                refreshButton.disabled = true;
+                refreshButton.textContent = 'Refreshing...';
+            }
             
-            // Only add sample data if no requests exist (first time)
-            if (requests.length === 0) {
-                // Sample requests for demo
-                const sampleRequests = [
-                    {
-                        clientName: 'John Doe',
-                        clientEmail: 'john@example.com',
-                        clientPhone: '+1234567890',
-                        service: 'Plumbing Repair',
-                        description: 'Leaky faucet in kitchen needs immediate attention',
-                        location: '123 Main St, Accra',
-                        date: new Date().toLocaleDateString(),
-                        status: 'pending'
-                    },
-                    {
-                        clientName: 'Jane Smith',
-                        clientEmail: 'jane@example.com',
-                        clientPhone: '+1234567891',
-                        service: 'Electrical Installation',
-                        description: 'Need new ceiling fan installed in living room',
-                        location: '456 Oak Ave, Accra',
-                        date: new Date().toLocaleDateString(),
-                        status: 'pending'
-                    }
-                ];
+            if (container) {
+                container.innerHTML = '<p style="text-align: center; color: var(--neutral-500); padding: var(--spacing-3xl);">Loading requests...</p>';
+            }
+            
+            try {
+                // Load requests from Firestore
+                const result = await firebaseRequests.getAllRequests();
+                let requests = result.success ? result.data : [];
                 
-                for (const requestData of sampleRequests) {
-                    await firebaseRequests.createRequest(requestData);
+                if (!result.success) {
+                    console.error('Error loading requests:', result.error);
+                    if (container) {
+                        container.innerHTML = `<p style="text-align: center; color: var(--error-500); padding: var(--spacing-3xl);">Error loading requests: ${result.error}</p>`;
+                    }
+                    return;
                 }
                 
-                // Reload requests
-                const reloadResult = await firebaseRequests.getAllRequests();
-                requests = reloadResult.success ? reloadResult.data : [];
-                
-                // Convert timestamps again
+                // Convert Firestore timestamps to dates
                 requests.forEach(request => {
                     if (request.createdAt) {
                         const date = convertTimestamp(request.createdAt);
@@ -6598,17 +6730,79 @@
                             request.date = date.toLocaleDateString();
                         }
                     }
+                    // Ensure all client fields are present
+                    if (!request.clientName && request.clientEmail) {
+                        // Try to get client name from email if missing
+                        request.clientName = request.clientEmail.split('@')[0];
+                    }
                 });
+                
+                // Only add sample data if no requests exist (first time)
+                if (requests.length === 0) {
+                    // Sample requests for demo
+                    const sampleRequests = [
+                        {
+                            clientName: 'John Doe',
+                            clientEmail: 'john@example.com',
+                            clientPhone: '+1234567890',
+                            service: 'Plumbing Repair',
+                            description: 'Leaky faucet in kitchen needs immediate attention',
+                            location: '123 Main St, Accra',
+                            date: new Date().toLocaleDateString(),
+                            status: 'pending'
+                        },
+                        {
+                            clientName: 'Jane Smith',
+                            clientEmail: 'jane@example.com',
+                            clientPhone: '+1234567891',
+                            service: 'Electrical Installation',
+                            description: 'Need new ceiling fan installed in living room',
+                            location: '456 Oak Ave, Accra',
+                            date: new Date().toLocaleDateString(),
+                            status: 'pending'
+                        }
+                    ];
+                    
+                    for (const requestData of sampleRequests) {
+                        await firebaseRequests.createRequest(requestData);
+                    }
+                    
+                    // Reload requests
+                    const reloadResult = await firebaseRequests.getAllRequests();
+                    requests = reloadResult.success ? reloadResult.data : [];
+                    
+                    // Convert timestamps again
+                    requests.forEach(request => {
+                        if (request.createdAt) {
+                            const date = convertTimestamp(request.createdAt);
+                            request.createdAt = date.toISOString();
+                            if (!request.date) {
+                                request.date = date.toLocaleDateString();
+                            }
+                        }
+                    });
+                }
+                
+                // Sort requests by date (newest first)
+                requests.sort((a, b) => {
+                    const dateA = a.createdAt ? new Date(a.createdAt) : new Date(a.date || 0);
+                    const dateB = b.createdAt ? new Date(b.createdAt) : new Date(b.date || 0);
+                    return dateB - dateA;
+                });
+                
+                renderRequests(requests);
+            } catch (error) {
+                console.error('Error in loadAgentRequests:', error);
+                if (container) {
+                    container.innerHTML = `<p style="text-align: center; color: var(--error-500); padding: var(--spacing-3xl);">Error: ${error.message}</p>`;
+                }
+            } finally {
+                // Restore button state
+                if (refreshButton) {
+                    refreshButton.disabled = false;
+                    refreshButton.textContent = 'Refresh';
+                }
             }
-            
-            // Sort requests by date (newest first)
-            requests.sort((a, b) => {
-                const dateA = a.createdAt ? new Date(a.createdAt) : new Date(a.date || 0);
-                const dateB = b.createdAt ? new Date(b.createdAt) : new Date(b.date || 0);
-                return dateB - dateA;
-            });
-            
-            renderRequests(requests);
         }
 
         function renderRequests(requests) {
@@ -6691,20 +6885,20 @@
                     </div>
                     <div class="request-actions">
                         ${request.status === 'pending' ? `
-                            <button class="btn btn-primary" onclick="showAssignProviderForm(${request.id})">Assign Provider</button>
-                            <button class="btn btn-ghost" onclick="showInvoiceForm(${request.id})">Create Invoice</button>
+                            <button class="btn btn-primary" onclick="showAssignProviderForm('${request.id}')">Assign Provider</button>
+                            <button class="btn btn-ghost" onclick="showInvoiceForm('${request.id}')">Create Invoice</button>
                         ` : ''}
                         ${request.status === 'assigned' ? `
-                            <button class="btn btn-ghost" onclick="showInvoiceForm(${request.id})">Create Invoice</button>
+                            <button class="btn btn-ghost" onclick="showInvoiceForm('${request.id}')">Create Invoice</button>
                         ` : ''}
                         ${request.status === 'completed' && request.invoice ? `
-                            <button class="btn btn-primary" onclick="viewInvoice(${request.id})">View Invoice</button>
-                            <button class="btn btn-ghost" onclick="resendInvoice(${request.id})">Resend Invoice</button>
+                            <button class="btn btn-primary" onclick="viewInvoice('${request.id}')">View Invoice</button>
+                            <button class="btn btn-ghost" onclick="resendInvoice('${request.id}')">Resend Invoice</button>
                         ` : ''}
                     </div>
                     <div class="assign-provider-form" id="assign-form-${request.id}">
                         <h4 style="margin-bottom: var(--spacing-lg); font-size: 18px; font-weight: 600;">Assign Provider</h4>
-                        <form onsubmit="assignProvider(event, ${request.id})">
+                        <form onsubmit="assignProvider(event, '${request.id}')">
                             <div class="form-row">
                                 <div class="form-group">
                                     <label class="form-label">Provider Name</label>
@@ -6732,24 +6926,45 @@
                         </form>
                     </div>
                     <div class="invoice-section" id="invoice-form-${request.id}">
-                        <h4 style="margin-bottom: var(--spacing-lg); font-size: 18px; font-weight: 600;">Create Invoice</h4>
+                        <div style="background: var(--primary-50); padding: var(--spacing-md); border-radius: var(--radius-md); margin-bottom: var(--spacing-lg);">
+                            <h4 style="margin: 0 0 var(--spacing-sm) 0; font-size: 18px; font-weight: 600; color: var(--primary-700);">Create Invoice</h4>
+                            <p style="margin: 0; font-size: 14px; color: var(--neutral-600);">
+                                Client: <strong>${request.clientName || 'N/A'}</strong> | 
+                                Email: <strong>${request.clientEmail || 'N/A'}</strong> | 
+                                Service: <strong>${request.service || 'N/A'}</strong>
+                            </p>
+                        </div>
                         <form id="invoice-form-submit-${request.id}">
-                            <div class="invoice-items" id="invoice-items-${request.id}">
-                                <div class="invoice-item">
-                                    <input type="text" class="form-input" placeholder="Item Description" required>
-                                    <input type="number" class="form-input" placeholder="Quantity" min="1" value="1" required oninput="updateInvoiceTotal(${request.id})">
-                                    <input type="number" class="form-input" placeholder="Unit Price" min="0" step="0.01" value="0" required oninput="updateInvoiceTotal(${request.id})">
-                                    <button type="button" class="btn btn-ghost" onclick="removeInvoiceItem(this)" style="padding: var(--spacing-xs);">Remove</button>
+                            <div style="margin-bottom: var(--spacing-md);">
+                                <label class="form-label" style="font-weight: 600; margin-bottom: var(--spacing-sm); display: block;">Invoice Items</label>
+                                <div class="invoice-items" id="invoice-items-${request.id}">
+                                    <div class="invoice-item">
+                                        <input type="text" class="form-input" placeholder="Item Description" required style="flex: 2;">
+                                        <input type="number" class="form-input" placeholder="Qty" min="1" value="1" required oninput="updateInvoiceTotal('${request.id}')" style="flex: 0.8;">
+                                        <input type="number" class="form-input" placeholder="Unit Price (₵)" min="0" step="0.01" value="0" required oninput="updateInvoiceTotal('${request.id}')" style="flex: 1;">
+                                        <button type="button" class="btn btn-ghost" onclick="removeInvoiceItem(this)" style="padding: var(--spacing-xs); min-width: auto;">✕</button>
+                                    </div>
                                 </div>
                             </div>
-                            <button type="button" class="btn btn-ghost" onclick="addInvoiceItem(${request.id})" style="margin-bottom: var(--spacing-lg);">+ Add Item</button>
-                            <div class="invoice-total">
-                                <span>Total:</span>
-                                <span id="invoice-total-${request.id}">₵0.00</span>
+                            <button type="button" class="btn btn-ghost" onclick="addInvoiceItem('${request.id}')" style="margin-bottom: var(--spacing-lg); width: 100%;">
+                                + Add Another Item
+                            </button>
+                            <div class="invoice-total" style="background: var(--neutral-100); padding: var(--spacing-md); border-radius: var(--radius-md); margin-bottom: var(--spacing-lg); display: flex; justify-content: space-between; align-items: center; font-size: 18px; font-weight: 700;">
+                                <span style="color: var(--neutral-700);">Total Amount:</span>
+                                <span id="invoice-total-${request.id}" style="color: var(--primary-600); font-size: 24px;">₵0.00</span>
                             </div>
-                            <div class="request-actions">
-                                <button type="button" class="btn btn-primary send-invoice-btn" data-request-id="${request.id}">Send Invoice to Client</button>
-                                <button type="button" class="btn btn-ghost" onclick="hideInvoiceForm(${request.id})">Cancel</button>
+                            <div class="request-actions" style="display: flex; gap: var(--spacing-md); margin-bottom: var(--spacing-md);">
+                                <button type="button" class="btn btn-primary" onclick="calculateInvoiceTotal('${request.id}')" style="flex: 1;">
+                                    ✓ Done (Calculate Total)
+                                </button>
+                                <button type="button" class="btn btn-ghost" onclick="hideInvoiceForm('${request.id}')" style="flex: 0.5;">
+                                    Cancel
+                                </button>
+                            </div>
+                            <div class="request-actions" style="display: flex; gap: var(--spacing-md);">
+                                <button type="button" class="btn btn-primary send-invoice-btn" data-request-id="${request.id}" style="flex: 1; background: var(--success-600);">
+                                    📧 Send Invoice to Client
+                                </button>
                             </div>
                         </form>
                     </div>
@@ -6778,29 +6993,72 @@
         }
 
         function showAssignProviderForm(requestId) {
-            document.getElementById(`assign-form-${requestId}`).classList.add('active');
+            // Handle both string and number requestId
+            const id = String(requestId);
+            const form = document.getElementById(`assign-form-${id}`);
+            if (!form) {
+                console.error('Assign form not found:', id);
+                alert('Form not found. Please refresh the page and try again.');
+                return;
+            }
+            form.classList.add('active');
         }
 
         function hideAssignProviderForm(requestId) {
-            document.getElementById(`assign-form-${requestId}`).classList.remove('active');
+            const id = String(requestId);
+            const form = document.getElementById(`assign-form-${id}`);
+            if (form) {
+                form.classList.remove('active');
+            }
         }
 
         async function assignProvider(event, requestId) {
             event.preventDefault();
             
-            const providerName = document.getElementById(`provider-name-${requestId}`).value;
-            const providerEmail = document.getElementById(`provider-email-${requestId}`).value;
-            const providerPhone = document.getElementById(`provider-phone-${requestId}`).value;
-            const providerSpecialization = document.getElementById(`provider-specialization-${requestId}`).value;
+            // Handle both string and number requestId
+            const id = String(requestId);
             
+            // Get form elements
+            const providerNameEl = document.getElementById(`provider-name-${id}`);
+            const providerEmailEl = document.getElementById(`provider-email-${id}`);
+            const providerPhoneEl = document.getElementById(`provider-phone-${id}`);
+            const providerSpecializationEl = document.getElementById(`provider-specialization-${id}`);
+            
+            if (!providerNameEl || !providerEmailEl || !providerPhoneEl || !providerSpecializationEl) {
+                alert('Error: Form fields not found. Please refresh the page and try again.');
+                console.error('Missing form fields for requestId:', id);
+                return;
+            }
+            
+            const providerName = providerNameEl.value.trim();
+            const providerEmail = providerEmailEl.value.trim();
+            const providerPhone = providerPhoneEl.value.trim();
+            const providerSpecialization = providerSpecializationEl.value.trim();
+            
+            // Validation
             if (!providerName || !providerEmail || !providerPhone || !providerSpecialization) {
                 alert('Please fill in all provider details.');
                 return;
             }
             
-            const result = await firebaseRequests.getRequest(requestId);
+            // Email validation
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(providerEmail)) {
+                alert('Please enter a valid email address for the provider.');
+                return;
+            }
             
-            if (result.success && result.data) {
+            try {
+                // Get request from Firestore (use original requestId - could be string or number)
+                const firestoreId = typeof requestId === 'string' ? requestId : String(requestId);
+                const result = await firebaseRequests.getRequest(firestoreId);
+                
+                if (!result.success || !result.data) {
+                    alert('Error: Request not found. Please refresh the page and try again.');
+                    console.error('Request not found:', firestoreId);
+                    return;
+                }
+                
                 const request = result.data;
                 const providerData = {
                     name: providerName,
@@ -6811,43 +7069,72 @@
                 };
                 
                 // Update request in Firestore
-                await firebaseRequests.updateRequest(requestId, {
+                const updateResult = await firebaseRequests.updateRequest(firestoreId, {
                     status: 'assigned',
                     provider: providerData
                 });
                 
-                loadAgentRequests();
-                alert(`✅ Provider assigned successfully!\n\nProvider: ${providerName}\nEmail: ${providerEmail}\nPhone: ${providerPhone}\n\nThe client has been notified.`);
+                if (updateResult.success) {
+                    // Hide the form
+                    hideAssignProviderForm(id);
+                    
+                    // Clear form fields
+                    providerNameEl.value = '';
+                    providerEmailEl.value = '';
+                    providerPhoneEl.value = '';
+                    providerSpecializationEl.value = '';
+                    
+                    // Reload requests to show updated status
+                    await loadAgentRequests();
+                    
+                    alert(`✅ Provider assigned successfully!\n\nProvider: ${providerName}\nEmail: ${providerEmail}\nPhone: ${providerPhone}\nSpecialization: ${providerSpecialization}\n\nThe client has been notified.`);
+                } else {
+                    alert('Failed to assign provider. Please try again.');
+                    console.error('Update error:', updateResult.error);
+                }
+            } catch (error) {
+                console.error('Error assigning provider:', error);
+                alert('An error occurred while assigning the provider. Please try again.');
             }
         }
 
         function showInvoiceForm(requestId) {
-            const invoiceForm = document.getElementById(`invoice-form-${requestId}`);
+            const id = typeof requestId === 'string' ? requestId : String(requestId);
+            const invoiceForm = document.getElementById(`invoice-form-${id}`);
             if (!invoiceForm) {
-                console.error('Invoice form not found:', requestId);
+                console.error('Invoice form not found:', id);
+                alert('Invoice form not found. Please refresh the page and try again.');
                 return;
             }
             invoiceForm.classList.add('active');
             
             // Reset invoice form if it was previously filled
-            const itemsContainer = document.getElementById(`invoice-items-${requestId}`);
+            const itemsContainer = document.getElementById(`invoice-items-${id}`);
             if (!itemsContainer) {
-                console.error('Items container not found:', requestId);
+                console.error('Items container not found:', id);
                 return;
             }
             
             itemsContainer.innerHTML = `
                 <div class="invoice-item">
-                    <input type="text" class="form-input" placeholder="Item Description" required>
-                    <input type="number" class="form-input" placeholder="Quantity" min="1" value="1" required oninput="updateInvoiceTotal(${requestId})">
-                    <input type="number" class="form-input" placeholder="Unit Price" min="0" step="0.01" value="0" required oninput="updateInvoiceTotal(${requestId})">
-                    <button type="button" class="btn btn-ghost" onclick="removeInvoiceItem(this)" style="padding: var(--spacing-xs);">Remove</button>
+                    <input type="text" class="form-input" placeholder="Item Description" required style="flex: 2;">
+                    <input type="number" class="form-input" placeholder="Qty" min="1" value="1" required oninput="updateInvoiceTotal('${id}')" style="flex: 0.8;">
+                    <input type="number" class="form-input" placeholder="Unit Price (₵)" min="0" step="0.01" value="0" required oninput="updateInvoiceTotal('${id}')" style="flex: 1;">
+                    <button type="button" class="btn btn-ghost" onclick="removeInvoiceItem(this)" style="padding: var(--spacing-xs); min-width: auto;">✕</button>
                 </div>
             `;
             
+            // Reset total display
+            const totalElement = document.getElementById(`invoice-total-${id}`);
+            if (totalElement) {
+                totalElement.textContent = '₵0.00';
+                totalElement.style.color = 'var(--primary-600)';
+                totalElement.style.fontWeight = '700';
+            }
+            
             // Update total after a short delay to ensure DOM is ready
             setTimeout(() => {
-                updateInvoiceTotal(requestId);
+                updateInvoiceTotal(id);
             }, 100);
         }
         
@@ -6902,7 +7189,11 @@
         }
 
         function hideInvoiceForm(requestId) {
-            document.getElementById(`invoice-form-${requestId}`).classList.remove('active');
+            const id = typeof requestId === 'string' ? requestId : String(requestId);
+            const form = document.getElementById(`invoice-form-${id}`);
+            if (form) {
+                form.classList.remove('active');
+            }
         }
 
         function addInvoiceItem(requestId) {
@@ -6915,10 +7206,10 @@
             const item = document.createElement('div');
             item.className = 'invoice-item';
             item.innerHTML = `
-                <input type="text" class="form-input" placeholder="Item Description" required>
-                <input type="number" class="form-input" placeholder="Quantity" min="1" value="1" required oninput="updateInvoiceTotal(${requestId})">
-                <input type="number" class="form-input" placeholder="Unit Price" min="0" step="0.01" value="0" required oninput="updateInvoiceTotal(${requestId})">
-                <button type="button" class="btn btn-ghost" onclick="removeInvoiceItem(this)" style="padding: var(--spacing-xs);">Remove</button>
+                <input type="text" class="form-input" placeholder="Item Description" required style="flex: 2;">
+                <input type="number" class="form-input" placeholder="Qty" min="1" value="1" required oninput="updateInvoiceTotal('${requestId}')" style="flex: 0.8;">
+                <input type="number" class="form-input" placeholder="Unit Price (₵)" min="0" step="0.01" value="0" required oninput="updateInvoiceTotal('${requestId}')" style="flex: 1;">
+                <button type="button" class="btn btn-ghost" onclick="removeInvoiceItem(this)" style="padding: var(--spacing-xs); min-width: auto;">✕</button>
             `;
             container.appendChild(item);
             
@@ -6929,16 +7220,30 @@
         }
 
         function removeInvoiceItem(button) {
-            button.closest('.invoice-item').remove();
+            const item = button.closest('.invoice-item');
+            if (!item) return;
+            
+            const itemsContainer = item.parentElement;
+            const allItems = itemsContainer.querySelectorAll('.invoice-item');
+            
+            // Don't allow removing the last item
+            if (allItems.length <= 1) {
+                alert('Invoice must have at least one item.');
+                return;
+            }
+            
+            item.remove();
             const requestId = button.closest('.invoice-section').id.replace('invoice-form-', '');
-            updateInvoiceTotal(parseInt(requestId));
+            updateInvoiceTotal(requestId);
         }
 
         function updateInvoiceTotal(requestId) {
             try {
-                const itemsContainer = document.getElementById(`invoice-items-${requestId}`);
+                // Handle both string and number requestId
+                const id = typeof requestId === 'string' ? requestId : String(requestId);
+                const itemsContainer = document.getElementById(`invoice-items-${id}`);
                 if (!itemsContainer) {
-                    console.warn('Items container not found for updateInvoiceTotal:', requestId);
+                    console.warn('Items container not found for updateInvoiceTotal:', id);
                     return;
                 }
                 
@@ -6956,23 +7261,120 @@
                     }
                 });
                 
-                const totalElement = document.getElementById(`invoice-total-${requestId}`);
+                const totalElement = document.getElementById(`invoice-total-${id}`);
                 if (totalElement) {
                     totalElement.textContent = `₵${total.toFixed(2)}`;
+                    // Add visual feedback for non-zero totals
+                    if (total > 0) {
+                        totalElement.style.color = 'var(--success-600)';
+                    } else {
+                        totalElement.style.color = 'var(--primary-600)';
+                    }
                 }
             } catch (error) {
                 console.error('Error updating invoice total:', error);
+            }
+        }
+        
+        // Calculate and display invoice total with validation
+        function calculateInvoiceTotal(requestId) {
+            const id = typeof requestId === 'string' ? requestId : String(requestId);
+            const itemsContainer = document.getElementById(`invoice-items-${id}`);
+            
+            if (!itemsContainer) {
+                alert('Error: Invoice form not found. Please refresh the page.');
+                return;
+            }
+            
+            const items = itemsContainer.querySelectorAll('.invoice-item');
+            
+            if (items.length === 0) {
+                alert('Please add at least one invoice item before calculating the total.');
+                return;
+            }
+            
+            let total = 0;
+            let hasErrors = false;
+            let errorMessages = [];
+            
+            items.forEach((item, index) => {
+                const descriptionInput = item.querySelector('input[type="text"]');
+                const quantityInput = item.querySelector('input[type="number"]:nth-of-type(1)');
+                const priceInput = item.querySelector('input[type="number"]:nth-of-type(2)');
+                
+                if (!descriptionInput || !quantityInput || !priceInput) {
+                    return;
+                }
+                
+                const description = descriptionInput.value.trim();
+                const quantityStr = quantityInput.value.trim();
+                const priceStr = priceInput.value.trim();
+                
+                // Check for empty fields
+                if (!description || !quantityStr || !priceStr) {
+                    hasErrors = true;
+                    errorMessages.push(`Item ${index + 1}: Please fill in all fields (description, quantity, and price).`);
+                    return;
+                }
+                
+                const quantity = parseFloat(quantityStr);
+                const price = parseFloat(priceStr);
+                
+                // Validate values
+                if (isNaN(quantity) || isNaN(price) || quantity <= 0 || price <= 0) {
+                    hasErrors = true;
+                    errorMessages.push(`Item ${index + 1}: Please enter valid quantity and price (must be greater than 0).`);
+                    return;
+                }
+                
+                total += quantity * price;
+            });
+            
+            // Update the total display
+            updateInvoiceTotal(id);
+            
+            // Show feedback
+            if (hasErrors) {
+                alert('⚠️ Please fix the following errors:\n\n' + errorMessages.join('\n') + '\n\nCurrent calculated total: ₵' + total.toFixed(2));
+            } else {
+                // Highlight the total with animation
+                const totalElement = document.getElementById(`invoice-total-${id}`);
+                if (totalElement) {
+                    totalElement.style.transition = 'all 0.3s ease';
+                    totalElement.style.transform = 'scale(1.1)';
+                    totalElement.style.color = 'var(--success-600)';
+                    totalElement.style.fontWeight = '800';
+                    
+                    setTimeout(() => {
+                        totalElement.style.transform = 'scale(1)';
+                    }, 300);
+                }
+                
+                alert(`✅ Total calculated successfully!\n\nTotal Amount: ₵${total.toFixed(2)}\n\nYou can now review and send the invoice.`);
             }
         }
 
         // Wrapper function for button click
         async function handleCreateInvoice(requestId) {
             console.log('handleCreateInvoice called with requestId:', requestId);
+            
+            // Disable button to prevent double submission
+            const button = document.querySelector(`[data-request-id="${requestId}"].send-invoice-btn`);
+            if (button) {
+                button.disabled = true;
+                button.textContent = 'Sending...';
+            }
+            
             try {
                 await createInvoice(null, requestId);
             } catch (error) {
                 console.error('Error in createInvoice:', error);
-                alert('An error occurred while creating the invoice. Please check the console for details.');
+                alert('An error occurred while creating the invoice. Please try again.');
+                // Re-enable button on error
+                if (button) {
+                    button.disabled = false;
+                    button.textContent = '📧 Send Invoice to Client';
+                }
             }
         }
         
@@ -6982,17 +7384,23 @@
                 event.preventDefault();
             }
             
-            // Convert requestId to number if it's a string
-            requestId = typeof requestId === 'string' ? parseInt(requestId, 10) : requestId;
+            // Keep requestId as string for consistency with DOM IDs
+            const id = typeof requestId === 'string' ? requestId : String(requestId);
             
-            console.log('createInvoice called with requestId:', requestId, 'type:', typeof requestId);
+            console.log('createInvoice called with requestId:', id, 'type:', typeof id);
             
             const items = [];
-            const itemsContainer = document.getElementById(`invoice-items-${requestId}`);
+            const itemsContainer = document.getElementById(`invoice-items-${id}`);
             
             if (!itemsContainer) {
-                console.error('Items container not found:', `invoice-items-${requestId}`);
+                console.error('Items container not found:', `invoice-items-${id}`);
                 alert('Error: Invoice form not found. Please refresh the page and try again.');
+                // Re-enable button on error
+                const button = document.querySelector(`[data-request-id="${id}"].send-invoice-btn`);
+                if (button) {
+                    button.disabled = false;
+                    button.textContent = '📧 Send Invoice to Client';
+                }
                 return;
             }
             
@@ -7001,6 +7409,12 @@
             
             if (itemElements.length === 0) {
                 alert('Please add at least one invoice item.');
+                // Re-enable button on error
+                const button = document.querySelector(`[data-request-id="${id}"].send-invoice-btn`);
+                if (button) {
+                    button.disabled = false;
+                    button.textContent = '📧 Send Invoice to Client';
+                }
                 return;
             }
             
@@ -7048,29 +7462,48 @@
             });
             
             if (items.length === 0) {
-                alert('Please fill in all invoice item fields correctly.');
+                alert('Please fill in all invoice item fields correctly. All items must have a description, quantity, and price.');
+                // Re-enable button on error
+                const button = document.querySelector(`[data-request-id="${id}"].send-invoice-btn`);
+                if (button) {
+                    button.disabled = false;
+                    button.textContent = '📧 Send Invoice to Client';
+                }
                 return;
             }
             
             const total = items.reduce((sum, item) => sum + item.total, 0);
             
             if (total <= 0) {
-                alert('Invoice total must be greater than zero.');
+                alert('Invoice total must be greater than zero. Please check your item prices and quantities.');
+                // Re-enable button on error
+                const button = document.querySelector(`[data-request-id="${id}"].send-invoice-btn`);
+                if (button) {
+                    button.disabled = false;
+                    button.textContent = '📧 Send Invoice to Client';
+                }
                 return;
             }
             
-            // Get request from Firestore
-            const result = await firebaseRequests.getRequest(requestId);
+            // Get request from Firestore (use original requestId for Firestore)
+            const firestoreId = typeof requestId === 'string' && !isNaN(requestId) ? requestId : id;
+            const result = await firebaseRequests.getRequest(firestoreId);
             
             if (!result.success || !result.data) {
                 alert('Error: Request not found. Please refresh the page and try again.');
+                // Re-enable button on error
+                const button = document.querySelector(`[data-request-id="${id}"].send-invoice-btn`);
+                if (button) {
+                    button.disabled = false;
+                    button.textContent = '📧 Send Invoice to Client';
+                }
                 return;
             }
             
             const request = result.data;
             const invoiceData = {
                 id: `INV-${Date.now()}`,
-                requestId: requestId,
+                requestId: firestoreId,
                 items: items,
                 total: total,
                 date: new Date().toLocaleDateString(),
@@ -7080,7 +7513,7 @@
             };
             
             // Update request in Firestore
-            await firebaseRequests.updateRequest(requestId, {
+            await firebaseRequests.updateRequest(firestoreId, {
                 invoice: invoiceData,
                 status: 'completed'
             });
@@ -7104,8 +7537,15 @@
             alert(confirmMessage);
             
             try {
+                // Re-enable button after success
+                const button = document.querySelector(`[data-request-id="${id}"].send-invoice-btn`);
+                if (button) {
+                    button.disabled = false;
+                    button.textContent = '📧 Send Invoice to Client';
+                }
+                
                 loadAgentRequests();
-                hideInvoiceForm(requestId);
+                hideInvoiceForm(id);
             } catch (error) {
                 console.error('Error refreshing requests:', error);
                 // Still show success even if refresh fails
@@ -7204,10 +7644,16 @@
                 } else {
                     // User is signed out - only update if not already on landing page
                     const landingPage = document.getElementById('landing-page');
+                    const mainContent = document.getElementById('main-content');
                     if (landingPage && landingPage.classList.contains('hidden')) {
                         console.log('Auth state listener: User signed out, updating UI');
                         await sessionDB.remove('homefix_authenticated');
                         await sessionDB.remove('homefix_user');
+                        // Explicitly hide main content
+                        if (mainContent) {
+                            mainContent.classList.remove('authenticated');
+                            mainContent.style.display = 'none';
+                        }
                         await checkAuthStatus();
                     }
                 }
@@ -7240,7 +7686,10 @@
                 if (authContainer) authContainer.classList.add('hidden');
                 if (agentContainer) agentContainer.classList.add('hidden');
                 if (agentDashboard) agentDashboard.classList.remove('active');
-                if (mainContent) mainContent.classList.remove('authenticated');
+                if (mainContent) {
+                    mainContent.classList.remove('authenticated');
+                    mainContent.style.display = 'none'; // Explicitly hide main content
+                }
             }
             
             // Only call init if user is authenticated (to avoid errors)
