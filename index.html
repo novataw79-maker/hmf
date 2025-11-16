@@ -3277,11 +3277,24 @@
         };
 
         // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
+        let firebaseInitialized = false;
+        try {
+            firebase.initializeApp(firebaseConfig);
+            firebaseInitialized = true;
+            console.log('Firebase initialized successfully');
+        } catch (error) {
+            console.error('Firebase initialization error:', error);
+            alert('Firebase configuration error. Please check your Firebase config.');
+        }
         
         // Initialize Firebase services
         const auth = firebase.auth();
         const db = firebase.firestore();
+        
+        // Check if Firebase is properly initialized
+        if (!firebaseInitialized) {
+            console.error('Firebase is not initialized. Please check your configuration.');
+        }
         
         // ============================================
         // Firebase Service Functions
@@ -3292,20 +3305,32 @@
             // Sign up new user
             async signUp(email, password, userData) {
                 try {
+                    console.log('Attempting to create user with email:', email);
                     const userCredential = await auth.createUserWithEmailAndPassword(email, password);
                     const user = userCredential.user;
+                    console.log('User created successfully:', user.uid);
                     
                     // Save user data to Firestore
-                    await db.collection('users').doc(user.uid).set({
-                        email: email,
-                        name: userData.name,
-                        phone: userData.phone,
-                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-                    });
+                    try {
+                        await db.collection('users').doc(user.uid).set({
+                            email: email,
+                            name: userData.name,
+                            phone: userData.phone,
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                        console.log('User data saved to Firestore');
+                    } catch (firestoreError) {
+                        console.error('Error saving user data to Firestore:', firestoreError);
+                        // User is created but data save failed - still return success
+                        // The user can update their profile later
+                    }
                     
                     return { success: true, user: user };
                 } catch (error) {
-                    return { success: false, error: error.message };
+                    console.error('Firebase signUp error:', error);
+                    console.error('Error code:', error.code);
+                    console.error('Error message:', error.message);
+                    return { success: false, error: error.message || error.code || 'Unknown error' };
                 }
             },
             
@@ -3331,7 +3356,23 @@
             
             // Get current user
             getCurrentUser() {
-                return auth.currentUser;
+                const user = auth.currentUser;
+                console.log('getCurrentUser called, user:', user ? user.uid : 'null');
+                return user;
+            },
+            
+            // Wait for auth state to be ready
+            async waitForAuthState() {
+                return new Promise((resolve) => {
+                    if (auth.currentUser) {
+                        resolve(auth.currentUser);
+                    } else {
+                        const unsubscribe = auth.onAuthStateChanged((user) => {
+                            unsubscribe();
+                            resolve(user);
+                        });
+                    }
+                });
             },
             
             // Listen to auth state changes
@@ -6020,6 +6061,9 @@
             const currentUser = firebaseAuth.getCurrentUser();
             const isAgentAuthenticated = await sessionDB.get('agent_authenticated') === 'true';
             
+            console.log('checkAuthStatus - currentUser:', currentUser ? currentUser.uid : 'null');
+            console.log('checkAuthStatus - isAgentAuthenticated:', isAgentAuthenticated);
+            
             const landingPage = document.getElementById('landing-page');
             const authContainer = document.getElementById('auth-container');
             const agentContainer = document.getElementById('agent-container');
@@ -6028,10 +6072,12 @@
             
             if (isAgentAuthenticated) {
                 // Don't interfere with agent dashboard
+                console.log('Agent authenticated, skipping user auth check');
                 return;
             }
             
             if (currentUser) {
+                console.log('User is authenticated, updating UI');
                 // User is authenticated with Firebase
                 // Sync user data from Firestore if needed
                 const userDataResult = await firebaseUsers.getUser(currentUser.uid);
@@ -6045,19 +6091,25 @@
                     });
                 }
                 
-                landingPage.classList.add('hidden');
-                landingPage.style.display = ''; // Remove inline style to allow CSS class to work
-                authContainer.classList.add('hidden');
-                agentContainer.classList.add('hidden');
-                agentDashboard.classList.remove('active');
-                mainContent.classList.add('authenticated');
+                // Show main content, hide everything else
+                if (landingPage) {
+                    landingPage.classList.add('hidden');
+                    landingPage.style.display = '';
+                }
+                if (authContainer) authContainer.classList.add('hidden');
+                if (agentContainer) agentContainer.classList.add('hidden');
+                if (agentDashboard) agentDashboard.classList.remove('active');
+                if (mainContent) mainContent.classList.add('authenticated');
+                
+                console.log('UI updated for authenticated user');
             } else {
+                console.log('No user authenticated, showing landing page');
                 // Show landing page by default, hide auth, agent, and main content
-                landingPage.classList.remove('hidden');
-                authContainer.classList.add('hidden');
-                agentContainer.classList.add('hidden');
-                agentDashboard.classList.remove('active');
-                mainContent.classList.remove('authenticated');
+                if (landingPage) landingPage.classList.remove('hidden');
+                if (authContainer) authContainer.classList.add('hidden');
+                if (agentContainer) agentContainer.classList.add('hidden');
+                if (agentDashboard) agentDashboard.classList.remove('active');
+                if (mainContent) mainContent.classList.remove('authenticated');
             }
         }
 
@@ -6207,36 +6259,91 @@
             }
             
             // Create account with Firebase
-            const result = await firebaseAuth.signUp(email, password, { name, phone });
-            
-            if (result.success) {
-                // User is automatically signed in after registration
-                // Store user session locally
-                await sessionDB.set('homefix_authenticated', 'true');
-                await sessionDB.set('homefix_user', {
-                    uid: result.user.uid,
-                    name: name,
-                    email: email,
-                    phone: phone
-                });
+            try {
+                const result = await firebaseAuth.signUp(email, password, { name, phone });
                 
-                showSuccess('register-success', 'Account created successfully! Redirecting...');
-                
-                setTimeout(async () => {
-                    await checkAuthStatus();
-                    showScreen('home');
-                }, 1000);
-            } else {
-                // Handle Firebase auth errors
-                let errorMessage = 'Failed to create account. Please try again.';
-                if (result.error.includes('email-already-in-use')) {
-                    errorMessage = 'An account with this email already exists.';
-                } else if (result.error.includes('weak-password')) {
-                    errorMessage = 'Password is too weak. Please use a stronger password.';
-                } else if (result.error.includes('invalid-email')) {
-                    errorMessage = 'Invalid email address. Please check and try again.';
+                if (result.success && result.user) {
+                    // User is automatically signed in after registration
+                    // Firebase automatically signs in the user after createUserWithEmailAndPassword
+                    const user = result.user;
+                    
+                    console.log('User registered and signed in:', user.uid);
+                    console.log('Current auth user:', auth.currentUser ? auth.currentUser.uid : 'null');
+                    
+                    // Wait for auth state to be fully updated
+                    await firebaseAuth.waitForAuthState();
+                    
+                    // Get user data from Firestore (it should be there since we just saved it)
+                    const userDataResult = await firebaseUsers.getUser(user.uid);
+                    
+                    // Store user session locally
+                    await sessionDB.set('homefix_authenticated', 'true');
+                    await sessionDB.set('homefix_user', {
+                        uid: user.uid,
+                        name: userDataResult.success ? userDataResult.data.name : name,
+                        email: userDataResult.success ? userDataResult.data.email : email,
+                        phone: userDataResult.success ? userDataResult.data.phone : phone
+                    });
+                    
+                    console.log('User session stored locally');
+                    
+                    showSuccess('register-success', 'Account created successfully! Redirecting...');
+                    
+                    // Force UI update immediately
+                    const authContainer = document.getElementById('auth-container');
+                    const landingPage = document.getElementById('landing-page');
+                    const mainContent = document.getElementById('main-content');
+                    
+                    if (authContainer) {
+                        authContainer.classList.add('hidden');
+                        console.log('Auth container hidden');
+                    }
+                    if (landingPage) {
+                        landingPage.classList.add('hidden');
+                        landingPage.style.display = '';
+                        console.log('Landing page hidden');
+                    }
+                    if (mainContent) {
+                        mainContent.classList.add('authenticated');
+                        console.log('Main content authenticated');
+                    }
+                    
+                    // Wait a moment then redirect
+                    setTimeout(async () => {
+                        console.log('Calling checkAuthStatus...');
+                        await checkAuthStatus();
+                        console.log('Showing home screen...');
+                        showScreen('home');
+                    }, 1000);
+                } else {
+                    // Log the actual error for debugging
+                    console.error('Firebase registration error:', result.error);
+                    
+                    // Handle Firebase auth errors with more specific messages
+                    let errorMessage = 'Failed to create account. Please try again.';
+                    const errorLower = result.error.toLowerCase();
+                    
+                    if (errorLower.includes('email-already-in-use') || errorLower.includes('already exists')) {
+                        errorMessage = 'An account with this email already exists.';
+                    } else if (errorLower.includes('weak-password') || errorLower.includes('password')) {
+                        errorMessage = 'Password is too weak. Please use a stronger password (at least 6 characters).';
+                    } else if (errorLower.includes('invalid-email')) {
+                        errorMessage = 'Invalid email address. Please check and try again.';
+                    } else if (errorLower.includes('network') || errorLower.includes('fetch')) {
+                        errorMessage = 'Network error. Please check your internet connection and try again.';
+                    } else if (errorLower.includes('auth/')) {
+                        // Show Firebase auth error code
+                        errorMessage = `Registration failed: ${result.error}. Please try again.`;
+                    } else {
+                        // Show the actual error message
+                        errorMessage = `Registration failed: ${result.error}`;
+                    }
+                    
+                    showError('register-error', errorMessage);
                 }
-                showError('register-error', errorMessage);
+            } catch (error) {
+                console.error('Registration exception:', error);
+                showError('register-error', `An unexpected error occurred: ${error.message}. Please try again.`);
             }
         }
 
