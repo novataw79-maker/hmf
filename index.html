@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HomeFix - Professional Home Service</title>
+    <title>HomeFix - Professional Home Services</title>
     <style>
         * {
             margin: 0;
@@ -2359,6 +2359,7 @@
         .landing-page {
             min-height: 100vh;
             background: var(--white);
+            display: block; /* Ensure it's visible by default */
         }
 
         .landing-nav {
@@ -3227,6 +3228,19 @@
             }
         }
     </style>
+    <script>
+        // Ensure landing page is visible immediately on page load
+        window.addEventListener('load', function() {
+            const landingPage = document.getElementById('landing-page');
+            const isAgentAuthenticated = localStorage.getItem('agent_authenticated') === 'true';
+            const isAuthenticated = localStorage.getItem('homefix_authenticated') === 'true';
+            
+            if (!isAgentAuthenticated && !isAuthenticated && landingPage) {
+                landingPage.classList.remove('hidden');
+                landingPage.style.display = 'block';
+            }
+        });
+    </script>
 </head>
 <body>
     <!-- Landing Page -->
@@ -6206,18 +6220,52 @@
             setInterval(showNextSlide, 4000);
         }
 
-        // Initialize on load
-        // Check agent auth first, then regular auth
-        // This ensures proper priority: agent > regular user > landing page
-        const isAgentAuthenticated = localStorage.getItem('agent_authenticated') === 'true';
-        if (isAgentAuthenticated) {
-            checkAgentAuth();
-        } else {
-            checkAuthStatus();
-            checkAgentAuth(); // Still call to ensure agent containers are hidden
+        // Initialize function
+        function initializePage() {
+            // Check agent auth first, then regular auth
+            // This ensures proper priority: agent > regular user > landing page
+            const isAgentAuthenticated = localStorage.getItem('agent_authenticated') === 'true';
+            const isAuthenticated = localStorage.getItem('homefix_authenticated') === 'true';
+            
+            // Get all containers
+            const landingPage = document.getElementById('landing-page');
+            const authContainer = document.getElementById('auth-container');
+            const agentContainer = document.getElementById('agent-container');
+            const agentDashboard = document.getElementById('agent-dashboard');
+            const mainContent = document.getElementById('main-content');
+            
+            // Ensure proper initial state
+            if (isAgentAuthenticated) {
+                checkAgentAuth();
+            } else if (isAuthenticated) {
+                checkAuthStatus();
+                checkAgentAuth(); // Still call to ensure agent containers are hidden
+            } else {
+                // Not authenticated - show landing page, hide everything else
+                if (landingPage) {
+                    landingPage.classList.remove('hidden');
+                    landingPage.style.display = 'block'; // Force display
+                }
+                if (authContainer) authContainer.classList.add('hidden');
+                if (agentContainer) agentContainer.classList.add('hidden');
+                if (agentDashboard) agentDashboard.classList.remove('active');
+                if (mainContent) mainContent.classList.remove('authenticated');
+            }
+            
+            // Only call init if user is authenticated (to avoid errors)
+            if (isAuthenticated && !isAgentAuthenticated) {
+                init();
+            }
+            initCTASlideshow();
         }
-        init();
-        initCTASlideshow();
+        
+        // Run immediately if DOM is ready, otherwise wait for DOMContentLoaded
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializePage);
+        } else {
+            // DOM is already loaded
+            initializePage();
+        }
     </script>
     </div> <!-- End of main-content -->
 
