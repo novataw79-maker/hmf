@@ -3518,7 +3518,7 @@
         // ============================================
         const DB_NAME = 'HomeFixDB';
         const DB_VERSION = 1;
-        let db = null;
+        let idb = null;
 
         // Initialize IndexedDB
         function initDB() {
@@ -3527,8 +3527,8 @@
 
                 request.onerror = () => reject(request.error);
                 request.onsuccess = () => {
-                    db = request.result;
-                    resolve(db);
+                    idb = request.result;
+                    resolve(idb);
                 };
 
                 request.onupgradeneeded = (event) => {
@@ -3564,31 +3564,36 @@
         // Database API - Users
         const userDB = {
             async getAll() {
-                const tx = db.transaction('users', 'readonly');
+                if (!idb) await initDB();
+                const tx = idb.transaction('users', 'readonly');
                 const store = tx.objectStore('users');
                 return store.getAll();
             },
 
             async get(email) {
-                const tx = db.transaction('users', 'readonly');
+                if (!idb) await initDB();
+                const tx = idb.transaction('users', 'readonly');
                 const store = tx.objectStore('users');
                 return store.get(email);
             },
 
             async add(user) {
-                const tx = db.transaction('users', 'readwrite');
+                if (!idb) await initDB();
+                const tx = idb.transaction('users', 'readwrite');
                 const store = tx.objectStore('users');
                 return store.add(user);
             },
 
             async update(email, user) {
-                const tx = db.transaction('users', 'readwrite');
+                if (!idb) await initDB();
+                const tx = idb.transaction('users', 'readwrite');
                 const store = tx.objectStore('users');
                 return store.put({ ...user, email });
             },
 
             async delete(email) {
-                const tx = db.transaction('users', 'readwrite');
+                if (!idb) await initDB();
+                const tx = idb.transaction('users', 'readwrite');
                 const store = tx.objectStore('users');
                 return store.delete(email);
             },
@@ -3602,20 +3607,23 @@
         // Database API - Requests
         const requestDB = {
             async getAll() {
-                const tx = db.transaction('requests', 'readonly');
+                if (!idb) await initDB();
+                const tx = idb.transaction('requests', 'readonly');
                 const store = tx.objectStore('requests');
                 return store.getAll();
             },
 
             async get(id) {
-                const tx = db.transaction('requests', 'readonly');
+                if (!idb) await initDB();
+                const tx = idb.transaction('requests', 'readonly');
                 const store = tx.objectStore('requests');
                 return store.get(id);
             },
 
             async add(request) {
+                if (!idb) await initDB();
                 return new Promise((resolve, reject) => {
-                    const tx = db.transaction('requests', 'readwrite');
+                    const tx = idb.transaction('requests', 'readwrite');
                     const store = tx.objectStore('requests');
                     const request_obj = store.add(request);
                     request_obj.onsuccess = () => {
@@ -3626,26 +3634,30 @@
             },
 
             async update(id, request) {
-                const tx = db.transaction('requests', 'readwrite');
+                if (!idb) await initDB();
+                const tx = idb.transaction('requests', 'readwrite');
                 const store = tx.objectStore('requests');
                 return store.put({ ...request, id });
             },
 
             async delete(id) {
-                const tx = db.transaction('requests', 'readwrite');
+                if (!idb) await initDB();
+                const tx = idb.transaction('requests', 'readwrite');
                 const store = tx.objectStore('requests');
                 return store.delete(id);
             },
 
             async getByEmail(email) {
-                const tx = db.transaction('requests', 'readonly');
+                if (!idb) await initDB();
+                const tx = idb.transaction('requests', 'readonly');
                 const store = tx.objectStore('requests');
                 const index = store.index('clientEmail');
                 return index.getAll(email);
             },
 
             async getByStatus(status) {
-                const tx = db.transaction('requests', 'readonly');
+                if (!idb) await initDB();
+                const tx = idb.transaction('requests', 'readonly');
                 const store = tx.objectStore('requests');
                 const index = store.index('status');
                 return index.getAll(status);
@@ -3655,26 +3667,30 @@
         // Database API - Sessions
         const sessionDB = {
             async get(key) {
-                const tx = db.transaction('sessions', 'readonly');
+                if (!idb) await initDB();
+                const tx = idb.transaction('sessions', 'readonly');
                 const store = tx.objectStore('sessions');
                 const result = await store.get(key);
                 return result ? result.value : null;
             },
 
             async set(key, value) {
-                const tx = db.transaction('sessions', 'readwrite');
+                if (!idb) await initDB();
+                const tx = idb.transaction('sessions', 'readwrite');
                 const store = tx.objectStore('sessions');
                 return store.put({ key, value });
             },
 
             async remove(key) {
-                const tx = db.transaction('sessions', 'readwrite');
+                if (!idb) await initDB();
+                const tx = idb.transaction('sessions', 'readwrite');
                 const store = tx.objectStore('sessions');
                 return store.delete(key);
             },
 
             async clear() {
-                const tx = db.transaction('sessions', 'readwrite');
+                if (!idb) await initDB();
+                const tx = idb.transaction('sessions', 'readwrite');
                 const store = tx.objectStore('sessions');
                 return store.clear();
             }
@@ -3683,25 +3699,29 @@
         // Database API - Agents
         const agentDB = {
             async getAll() {
-                const tx = db.transaction('agents', 'readonly');
+                if (!idb) await initDB();
+                const tx = idb.transaction('agents', 'readonly');
                 const store = tx.objectStore('agents');
                 return store.getAll();
             },
 
             async get(username) {
-                const tx = db.transaction('agents', 'readonly');
+                if (!idb) await initDB();
+                const tx = idb.transaction('agents', 'readonly');
                 const store = tx.objectStore('agents');
                 return store.get(username);
             },
 
             async add(agent) {
-                const tx = db.transaction('agents', 'readwrite');
+                if (!idb) await initDB();
+                const tx = idb.transaction('agents', 'readwrite');
                 const store = tx.objectStore('agents');
                 return store.add(agent);
             },
 
             async update(username, agent) {
-                const tx = db.transaction('agents', 'readwrite');
+                if (!idb) await initDB();
+                const tx = idb.transaction('agents', 'readwrite');
                 const store = tx.objectStore('agents');
                 return store.put({ ...agent, username });
             }
@@ -6057,9 +6077,26 @@
 
         // Authentication Functions
         async function checkAuthStatus() {
-            // Check Firebase auth state
-            const currentUser = firebaseAuth.getCurrentUser();
+            // Check Firebase auth state - try multiple methods
+            let currentUser = firebaseAuth.getCurrentUser();
             const isAgentAuthenticated = await sessionDB.get('agent_authenticated') === 'true';
+            
+            // If currentUser is null, check local session as fallback
+            if (!currentUser) {
+                const localAuth = await sessionDB.get('homefix_authenticated');
+                if (localAuth === 'true') {
+                    // User should be authenticated, wait for auth state to be ready
+                    try {
+                        currentUser = await firebaseAuth.waitForAuthState();
+                        console.log('Auth state ready, currentUser:', currentUser ? currentUser.uid : 'null');
+                    } catch (error) {
+                        console.warn('Error waiting for auth state:', error);
+                        // Fall back to getCurrentUser after a short delay
+                        await new Promise(resolve => setTimeout(resolve, 300));
+                        currentUser = firebaseAuth.getCurrentUser();
+                    }
+                }
+            }
             
             console.log('checkAuthStatus - currentUser:', currentUser ? currentUser.uid : 'null');
             console.log('checkAuthStatus - isAgentAuthenticated:', isAgentAuthenticated);
@@ -6076,30 +6113,40 @@
                 return;
             }
             
-            if (currentUser) {
+            // Check if we have a local session even if currentUser is null (for timing issues)
+            const localUser = await sessionDB.get('homefix_user');
+            const hasLocalSession = await sessionDB.get('homefix_authenticated') === 'true';
+            
+            if (currentUser || (hasLocalSession && localUser)) {
                 console.log('User is authenticated, updating UI');
                 // User is authenticated with Firebase
+                const userId = currentUser ? currentUser.uid : localUser.uid;
+                
                 // Sync user data from Firestore if needed
-                const userDataResult = await firebaseUsers.getUser(currentUser.uid);
-                if (userDataResult.success) {
-                    await sessionDB.set('homefix_authenticated', 'true');
-                    await sessionDB.set('homefix_user', {
-                        uid: currentUser.uid,
-                        name: userDataResult.data.name,
-                        email: userDataResult.data.email,
-                        phone: userDataResult.data.phone
-                    });
+                if (currentUser) {
+                    const userDataResult = await firebaseUsers.getUser(currentUser.uid);
+                    if (userDataResult.success) {
+                        await sessionDB.set('homefix_authenticated', 'true');
+                        await sessionDB.set('homefix_user', {
+                            uid: currentUser.uid,
+                            name: userDataResult.data.name,
+                            email: userDataResult.data.email,
+                            phone: userDataResult.data.phone
+                        });
+                    }
                 }
                 
                 // Show main content, hide everything else
                 if (landingPage) {
                     landingPage.classList.add('hidden');
-                    landingPage.style.display = '';
                 }
                 if (authContainer) authContainer.classList.add('hidden');
                 if (agentContainer) agentContainer.classList.add('hidden');
                 if (agentDashboard) agentDashboard.classList.remove('active');
-                if (mainContent) mainContent.classList.add('authenticated');
+                if (mainContent) {
+                    mainContent.classList.add('authenticated');
+                    mainContent.style.display = 'block'; // Force display
+                }
                 
                 console.log('UI updated for authenticated user');
             } else {
@@ -6184,6 +6231,9 @@
             const result = await firebaseAuth.signIn(email, password);
             
             if (result.success) {
+                // Wait for auth state to be fully ready
+                await firebaseAuth.waitForAuthState();
+                
                 // Get user data from Firestore
                 const userDataResult = await firebaseUsers.getUser(result.user.uid);
                 
@@ -6203,12 +6253,48 @@
                         await sessionDB.set('homefix_remember', 'true');
                     }
                     
+                    console.log('User signed in successfully:', result.user.uid);
+                    
                     showSuccess('signin-success', 'Sign in successful! Redirecting...');
                     
+                    // Immediately update UI - don't wait for checkAuthStatus
+                    const authContainer = document.getElementById('auth-container');
+                    const landingPage = document.getElementById('landing-page');
+                    const mainContent = document.getElementById('main-content');
+                    const agentContainer = document.getElementById('agent-container');
+                    const agentDashboard = document.getElementById('agent-dashboard');
+                    
+                    // Hide auth and landing, show main content
+                    if (authContainer) {
+                        authContainer.classList.add('hidden');
+                        console.log('✓ Auth container hidden');
+                    }
+                    if (landingPage) {
+                        landingPage.classList.add('hidden');
+                        console.log('✓ Landing page hidden');
+                    }
+                    if (agentContainer) agentContainer.classList.add('hidden');
+                    if (agentDashboard) agentDashboard.classList.remove('active');
+                    if (mainContent) {
+                        mainContent.classList.add('authenticated');
+                        mainContent.style.display = 'block'; // Force display
+                        console.log('✓ Main content shown');
+                    }
+                    
+                    // Navigate to home screen immediately
+                    console.log('Navigating to home screen...');
+                    showScreen('home');
+                    
+                    // Initialize the app
+                    if (typeof init === 'function') {
+                        init();
+                        console.log('✓ App initialized');
+                    }
+                    
+                    // Verify auth state in background (but don't block UI)
                     setTimeout(async () => {
                         await checkAuthStatus();
-                        showScreen('home');
-                    }, 1000);
+                    }, 500);
                 } else {
                     showError('signin-error', 'Error loading user data. Please try again.');
                 }
@@ -6268,53 +6354,77 @@
                     const user = result.user;
                     
                     console.log('User registered and signed in:', user.uid);
-                    console.log('Current auth user:', auth.currentUser ? auth.currentUser.uid : 'null');
+                    console.log('User email:', user.email);
                     
-                    // Wait for auth state to be fully updated
+                    // Wait for auth state to be fully ready
                     await firebaseAuth.waitForAuthState();
                     
                     // Get user data from Firestore (it should be there since we just saved it)
+                    // Wait a bit for Firestore to be ready
+                    await new Promise(resolve => setTimeout(resolve, 500));
                     const userDataResult = await firebaseUsers.getUser(user.uid);
                     
                     // Store user session locally
-                    await sessionDB.set('homefix_authenticated', 'true');
-                    await sessionDB.set('homefix_user', {
+                    const userData = {
                         uid: user.uid,
                         name: userDataResult.success ? userDataResult.data.name : name,
                         email: userDataResult.success ? userDataResult.data.email : email,
                         phone: userDataResult.success ? userDataResult.data.phone : phone
-                    });
+                    };
                     
-                    console.log('User session stored locally');
+                    await sessionDB.set('homefix_authenticated', 'true');
+                    await sessionDB.set('homefix_user', userData);
+                    
+                    console.log('User session stored locally:', userData);
                     
                     showSuccess('register-success', 'Account created successfully! Redirecting...');
                     
-                    // Force UI update immediately
+                    // Immediately update UI - don't wait for checkAuthStatus
                     const authContainer = document.getElementById('auth-container');
                     const landingPage = document.getElementById('landing-page');
                     const mainContent = document.getElementById('main-content');
+                    const agentContainer = document.getElementById('agent-container');
+                    const agentDashboard = document.getElementById('agent-dashboard');
                     
+                    // Hide auth and landing, show main content
                     if (authContainer) {
                         authContainer.classList.add('hidden');
-                        console.log('Auth container hidden');
+                        console.log('✓ Auth container hidden');
                     }
                     if (landingPage) {
                         landingPage.classList.add('hidden');
-                        landingPage.style.display = '';
-                        console.log('Landing page hidden');
+                        console.log('✓ Landing page hidden');
                     }
+                    if (agentContainer) agentContainer.classList.add('hidden');
+                    if (agentDashboard) agentDashboard.classList.remove('active');
                     if (mainContent) {
                         mainContent.classList.add('authenticated');
-                        console.log('Main content authenticated');
+                        mainContent.style.display = 'block'; // Force display
+                        console.log('✓ Main content shown');
                     }
                     
-                    // Wait a moment then redirect
+                    // Navigate to home screen immediately
+                    console.log('Navigating to home screen...');
+                    showScreen('home');
+                    
+                    // Initialize the app
+                    if (typeof init === 'function') {
+                        init();
+                        console.log('✓ App initialized');
+                    }
+                    
+                    // Verify auth state in background (but don't block UI)
                     setTimeout(async () => {
-                        console.log('Calling checkAuthStatus...');
-                        await checkAuthStatus();
-                        console.log('Showing home screen...');
-                        showScreen('home');
-                    }, 1000);
+                        const currentUser = firebaseAuth.getCurrentUser();
+                        console.log('Background auth check - currentUser:', currentUser ? currentUser.uid : 'null');
+                        if (currentUser) {
+                            console.log('✓ Firebase auth state confirmed');
+                        } else {
+                            console.warn('⚠ Firebase auth.currentUser is null, but user should be signed in');
+                            // Force re-check auth status
+                            await checkAuthStatus();
+                        }
+                    }, 2000);
                 } else {
                     // Log the actual error for debugging
                     console.error('Firebase registration error:', result.error);
@@ -7058,8 +7168,18 @@
 
         // Initialize function
         async function initializePage() {
+            // Ensure database is initialized first
+            if (!idb) {
+                try {
+                    await initializeDatabase();
+                } catch (error) {
+                    console.error('Failed to initialize database:', error);
+                }
+            }
+            
             // Set up Firebase auth state listener
             firebaseAuth.onAuthStateChanged(async (user) => {
+                console.log('Auth state changed:', user ? user.uid : 'signed out');
                 if (user) {
                     // User is signed in
                     const userDataResult = await firebaseUsers.getUser(user.uid);
@@ -7071,13 +7191,26 @@
                             email: userDataResult.data.email,
                             phone: userDataResult.data.phone
                         });
+                        console.log('Auth state listener: User data synced');
+                    }
+                    // Only update UI if main content is not already authenticated
+                    const mainContent = document.getElementById('main-content');
+                    if (mainContent && !mainContent.classList.contains('authenticated')) {
+                        console.log('Auth state listener: Updating UI');
+                        await checkAuthStatus();
+                    } else {
+                        console.log('Auth state listener: UI already authenticated, skipping update');
                     }
                 } else {
-                    // User is signed out
-                    await sessionDB.remove('homefix_authenticated');
-                    await sessionDB.remove('homefix_user');
+                    // User is signed out - only update if not already on landing page
+                    const landingPage = document.getElementById('landing-page');
+                    if (landingPage && landingPage.classList.contains('hidden')) {
+                        console.log('Auth state listener: User signed out, updating UI');
+                        await sessionDB.remove('homefix_authenticated');
+                        await sessionDB.remove('homefix_user');
+                        await checkAuthStatus();
+                    }
                 }
-                await checkAuthStatus();
             });
             
             // Check agent auth first, then regular auth
