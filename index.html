@@ -3228,12 +3228,536 @@
             }
         }
     </style>
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     <script>
+        // ============================================
+        // Firebase Configuration
+        // ============================================
+        // SETUP INSTRUCTIONS:
+        // 1. Go to https://console.firebase.google.com/
+        // 2. Create a new project (or select existing)
+        // 3. Enable Authentication:
+        //    - Go to Authentication > Sign-in method
+        //    - Enable "Email/Password"
+        // 4. Enable Firestore Database:
+        //    - Go to Firestore Database > Create database
+        //    - Start in test mode (for development)
+        //    - Choose a location
+        // 5. Get your config:
+        //    - Go to Project Settings > General
+        //    - Scroll to "Your apps" section
+        //    - Click the </> icon to add a web app
+        //    - Copy the firebaseConfig object
+        // 6. Replace the values below with your config
+        // 7. Set Firestore Security Rules (Firestore > Rules):
+        //    rules_version = '2';
+        //    service cloud.firestore {
+        //      match /databases/{database}/documents {
+        //        match /users/{userId} {
+        //          allow read, write: if request.auth != null && request.auth.uid == userId;
+        //        }
+        //        match /requests/{requestId} {
+        //          allow read: if request.auth != null;
+        //          allow create: if request.auth != null;
+        //          allow update, delete: if request.auth != null;
+        //        }
+        //      }
+        //    }
+        const firebaseConfig = {
+            apiKey: "AIzaSyAIfMwzFE5Kgi1s1n77R8CL66anwR6HPOw",
+            authDomain: "homefix-dd9d4.firebaseapp.com",
+            projectId: "homefix-dd9d4",
+            storageBucket: "homefix-dd9d4.firebasestorage.app",
+            messagingSenderId: "634866197350",
+            appId: "1:634866197350:web:26a4218947dfe652f05ea7",
+            measurementId: "G-S6S707G0G8"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        
+        // Initialize Firebase services
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+        
+        // ============================================
+        // Firebase Service Functions
+        // ============================================
+        
+        // Authentication Service
+        const firebaseAuth = {
+            // Sign up new user
+            async signUp(email, password, userData) {
+                try {
+                    const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                    const user = userCredential.user;
+                    
+                    // Save user data to Firestore
+                    await db.collection('users').doc(user.uid).set({
+                        email: email,
+                        name: userData.name,
+                        phone: userData.phone,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    
+                    return { success: true, user: user };
+                } catch (error) {
+                    return { success: false, error: error.message };
+                }
+            },
+            
+            // Sign in existing user
+            async signIn(email, password) {
+                try {
+                    const userCredential = await auth.signInWithEmailAndPassword(email, password);
+                    return { success: true, user: userCredential.user };
+                } catch (error) {
+                    return { success: false, error: error.message };
+                }
+            },
+            
+            // Sign out
+            async signOut() {
+                try {
+                    await auth.signOut();
+                    return { success: true };
+                } catch (error) {
+                    return { success: false, error: error.message };
+                }
+            },
+            
+            // Get current user
+            getCurrentUser() {
+                return auth.currentUser;
+            },
+            
+            // Listen to auth state changes
+            onAuthStateChanged(callback) {
+                return auth.onAuthStateChanged(callback);
+            }
+        };
+        
+        // Firestore Service - Users
+        const firebaseUsers = {
+            async getUser(uid) {
+                try {
+                    const doc = await db.collection('users').doc(uid).get();
+                    if (doc.exists) {
+                        return { success: true, data: doc.data() };
+                    }
+                    return { success: false, error: 'User not found' };
+                } catch (error) {
+                    return { success: false, error: error.message };
+                }
+            },
+            
+            async updateUser(uid, data) {
+                try {
+                    await db.collection('users').doc(uid).update(data);
+                    return { success: true };
+                } catch (error) {
+                    return { success: false, error: error.message };
+                }
+            }
+        };
+        
+        // Firestore Service - Requests
+        const firebaseRequests = {
+            async createRequest(requestData) {
+                try {
+                    const docRef = await db.collection('requests').add({
+                        ...requestData,
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    return { success: true, id: docRef.id };
+                } catch (error) {
+                    return { success: false, error: error.message };
+                }
+            },
+            
+            async getRequest(requestId) {
+                try {
+                    const doc = await db.collection('requests').doc(requestId).get();
+                    if (doc.exists) {
+                        return { success: true, data: { id: doc.id, ...doc.data() } };
+                    }
+                    return { success: false, error: 'Request not found' };
+                } catch (error) {
+                    return { success: false, error: error.message };
+                }
+            },
+            
+            async updateRequest(requestId, data) {
+                try {
+                    await db.collection('requests').doc(requestId).update({
+                        ...data,
+                        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+                    });
+                    return { success: true };
+                } catch (error) {
+                    return { success: false, error: error.message };
+                }
+            },
+            
+            async getUserRequests(userEmail) {
+                try {
+                    // Query requests by email (if index error occurs, create composite index in Firebase Console)
+                    let snapshot;
+                    try {
+                        snapshot = await db.collection('requests')
+                            .where('clientEmail', '==', userEmail)
+                            .orderBy('createdAt', 'desc')
+                            .get();
+                    } catch (error) {
+                        // If index error, get all and filter client-side
+                        if (error.message.includes('index')) {
+                            const allSnapshot = await db.collection('requests')
+                                .orderBy('createdAt', 'desc')
+                                .get();
+                            snapshot = {
+                                forEach: (callback) => {
+                                    allSnapshot.forEach(doc => {
+                                        const data = doc.data();
+                                        if (data.clientEmail === userEmail) {
+                                            callback({ id: doc.id, data: () => data });
+                                        }
+                                    });
+                                }
+                            };
+                        } else {
+                            throw error;
+                        }
+                    }
+                    
+                    const requests = [];
+                    snapshot.forEach(doc => {
+                        const data = doc.data ? doc.data() : doc;
+                        requests.push({ id: doc.id, ...data });
+                    });
+                    
+                    return { success: true, data: requests };
+                } catch (error) {
+                    return { success: false, error: error.message };
+                }
+            },
+            
+            async getAllRequests() {
+                try {
+                    const snapshot = await db.collection('requests')
+                        .orderBy('createdAt', 'desc')
+                        .get();
+                    
+                    const requests = [];
+                    snapshot.forEach(doc => {
+                        requests.push({ id: doc.id, ...doc.data() });
+                    });
+                    
+                    return { success: true, data: requests };
+                } catch (error) {
+                    return { success: false, error: error.message };
+                }
+            }
+        };
+        
+        // Helper function to convert Firestore timestamp to date
+        function convertTimestamp(timestamp) {
+            if (timestamp && timestamp.toDate) {
+                return timestamp.toDate();
+            }
+            return new Date();
+        }
+    </script>
+    <script>
+        // ============================================
+        // IndexedDB Database Module
+        // ============================================
+        const DB_NAME = 'HomeFixDB';
+        const DB_VERSION = 1;
+        let db = null;
+
+        // Initialize IndexedDB
+        function initDB() {
+            return new Promise((resolve, reject) => {
+                const request = indexedDB.open(DB_NAME, DB_VERSION);
+
+                request.onerror = () => reject(request.error);
+                request.onsuccess = () => {
+                    db = request.result;
+                    resolve(db);
+                };
+
+                request.onupgradeneeded = (event) => {
+                    const db = event.target.result;
+
+                    // Users store
+                    if (!db.objectStoreNames.contains('users')) {
+                        const usersStore = db.createObjectStore('users', { keyPath: 'email' });
+                        usersStore.createIndex('email', 'email', { unique: true });
+                    }
+
+                    // Requests store
+                    if (!db.objectStoreNames.contains('requests')) {
+                        const requestsStore = db.createObjectStore('requests', { keyPath: 'id', autoIncrement: true });
+                        requestsStore.createIndex('clientEmail', 'clientEmail', { unique: false });
+                        requestsStore.createIndex('status', 'status', { unique: false });
+                        requestsStore.createIndex('createdAt', 'createdAt', { unique: false });
+                    }
+
+                    // Sessions store (for authentication state)
+                    if (!db.objectStoreNames.contains('sessions')) {
+                        const sessionsStore = db.createObjectStore('sessions', { keyPath: 'key' });
+                    }
+
+                    // Agents store
+                    if (!db.objectStoreNames.contains('agents')) {
+                        const agentsStore = db.createObjectStore('agents', { keyPath: 'username' });
+                    }
+                };
+            });
+        }
+
+        // Database API - Users
+        const userDB = {
+            async getAll() {
+                const tx = db.transaction('users', 'readonly');
+                const store = tx.objectStore('users');
+                return store.getAll();
+            },
+
+            async get(email) {
+                const tx = db.transaction('users', 'readonly');
+                const store = tx.objectStore('users');
+                return store.get(email);
+            },
+
+            async add(user) {
+                const tx = db.transaction('users', 'readwrite');
+                const store = tx.objectStore('users');
+                return store.add(user);
+            },
+
+            async update(email, user) {
+                const tx = db.transaction('users', 'readwrite');
+                const store = tx.objectStore('users');
+                return store.put({ ...user, email });
+            },
+
+            async delete(email) {
+                const tx = db.transaction('users', 'readwrite');
+                const store = tx.objectStore('users');
+                return store.delete(email);
+            },
+
+            async findByEmail(email) {
+                const user = await this.get(email);
+                return user;
+            }
+        };
+
+        // Database API - Requests
+        const requestDB = {
+            async getAll() {
+                const tx = db.transaction('requests', 'readonly');
+                const store = tx.objectStore('requests');
+                return store.getAll();
+            },
+
+            async get(id) {
+                const tx = db.transaction('requests', 'readonly');
+                const store = tx.objectStore('requests');
+                return store.get(id);
+            },
+
+            async add(request) {
+                return new Promise((resolve, reject) => {
+                    const tx = db.transaction('requests', 'readwrite');
+                    const store = tx.objectStore('requests');
+                    const request_obj = store.add(request);
+                    request_obj.onsuccess = () => {
+                        resolve(request_obj.result); // Returns the auto-generated ID
+                    };
+                    request_obj.onerror = () => reject(request_obj.error);
+                });
+            },
+
+            async update(id, request) {
+                const tx = db.transaction('requests', 'readwrite');
+                const store = tx.objectStore('requests');
+                return store.put({ ...request, id });
+            },
+
+            async delete(id) {
+                const tx = db.transaction('requests', 'readwrite');
+                const store = tx.objectStore('requests');
+                return store.delete(id);
+            },
+
+            async getByEmail(email) {
+                const tx = db.transaction('requests', 'readonly');
+                const store = tx.objectStore('requests');
+                const index = store.index('clientEmail');
+                return index.getAll(email);
+            },
+
+            async getByStatus(status) {
+                const tx = db.transaction('requests', 'readonly');
+                const store = tx.objectStore('requests');
+                const index = store.index('status');
+                return index.getAll(status);
+            }
+        };
+
+        // Database API - Sessions
+        const sessionDB = {
+            async get(key) {
+                const tx = db.transaction('sessions', 'readonly');
+                const store = tx.objectStore('sessions');
+                const result = await store.get(key);
+                return result ? result.value : null;
+            },
+
+            async set(key, value) {
+                const tx = db.transaction('sessions', 'readwrite');
+                const store = tx.objectStore('sessions');
+                return store.put({ key, value });
+            },
+
+            async remove(key) {
+                const tx = db.transaction('sessions', 'readwrite');
+                const store = tx.objectStore('sessions');
+                return store.delete(key);
+            },
+
+            async clear() {
+                const tx = db.transaction('sessions', 'readwrite');
+                const store = tx.objectStore('sessions');
+                return store.clear();
+            }
+        };
+
+        // Database API - Agents
+        const agentDB = {
+            async getAll() {
+                const tx = db.transaction('agents', 'readonly');
+                const store = tx.objectStore('agents');
+                return store.getAll();
+            },
+
+            async get(username) {
+                const tx = db.transaction('agents', 'readonly');
+                const store = tx.objectStore('agents');
+                return store.get(username);
+            },
+
+            async add(agent) {
+                const tx = db.transaction('agents', 'readwrite');
+                const store = tx.objectStore('agents');
+                return store.add(agent);
+            },
+
+            async update(username, agent) {
+                const tx = db.transaction('agents', 'readwrite');
+                const store = tx.objectStore('agents');
+                return store.put({ ...agent, username });
+            }
+        };
+
+        // Migrate data from localStorage to IndexedDB
+        async function migrateFromLocalStorage() {
+            try {
+                // Check if migration already done
+                const migrationDone = await sessionDB.get('migration_done');
+                if (migrationDone) return;
+
+                // Migrate users
+                const users = JSON.parse(localStorage.getItem('homefix_users') || '[]');
+                for (const user of users) {
+                    try {
+                        await userDB.add(user);
+                    } catch (e) {
+                        // User might already exist, skip
+                    }
+                }
+
+                // Migrate requests
+                const agentRequests = JSON.parse(localStorage.getItem('agent_requests') || '[]');
+                for (const request of agentRequests) {
+                    try {
+                        await requestDB.add(request);
+                    } catch (e) {
+                        // Request might already exist, skip
+                    }
+                }
+
+                // Migrate user-specific requests
+                const keys = Object.keys(localStorage);
+                for (const key of keys) {
+                    if (key.startsWith('user_requests_')) {
+                        const email = key.replace('user_requests_', '');
+                        const userRequests = JSON.parse(localStorage.getItem(key) || '[]');
+                        for (const request of userRequests) {
+                            try {
+                                // Check if request already exists
+                                const existing = await requestDB.get(request.id);
+                                if (!existing) {
+                                    await requestDB.add(request);
+                                }
+                            } catch (e) {
+                                // Request might already exist, skip
+                            }
+                        }
+                    }
+                }
+
+                // Migrate authentication state
+                const isAuthenticated = localStorage.getItem('homefix_authenticated') === 'true';
+                if (isAuthenticated) {
+                    await sessionDB.set('homefix_authenticated', 'true');
+                    const userData = JSON.parse(localStorage.getItem('homefix_user') || '{}');
+                    if (userData.email) {
+                        await sessionDB.set('homefix_user', userData);
+                    }
+                }
+
+                const isAgentAuthenticated = localStorage.getItem('agent_authenticated') === 'true';
+                if (isAgentAuthenticated) {
+                    await sessionDB.set('agent_authenticated', 'true');
+                    const agentUsername = localStorage.getItem('agent_username');
+                    if (agentUsername) {
+                        await sessionDB.set('agent_username', agentUsername);
+                    }
+                }
+
+                // Mark migration as done
+                await sessionDB.set('migration_done', 'true');
+                console.log('Data migration completed successfully');
+            } catch (error) {
+                console.error('Migration error:', error);
+            }
+        }
+
+        // Initialize database on page load
+        async function initializeDatabase() {
+            try {
+                await initDB();
+                await migrateFromLocalStorage();
+                console.log('Database initialized successfully');
+            } catch (error) {
+                console.error('Database initialization error:', error);
+            }
+        }
+
         // Ensure landing page is visible immediately on page load
-        window.addEventListener('load', function() {
+        window.addEventListener('load', async function() {
+            await initializeDatabase();
+            
             const landingPage = document.getElementById('landing-page');
-            const isAgentAuthenticated = localStorage.getItem('agent_authenticated') === 'true';
-            const isAuthenticated = localStorage.getItem('homefix_authenticated') === 'true';
+            const isAgentAuthenticated = await sessionDB.get('agent_authenticated') === 'true';
+            const isAuthenticated = await sessionDB.get('homefix_authenticated') === 'true';
             
             if (!isAgentAuthenticated && !isAuthenticated && landingPage) {
                 landingPage.classList.remove('hidden');
@@ -4905,7 +5429,7 @@
         }
 
         // Submit Survey
-        function submitSurvey(event) {
+        async function submitSurvey(event) {
             event.preventDefault();
             const formData = {
                 service: document.getElementById('survey-service').value,
@@ -4918,15 +5442,10 @@
                 requirements: Array.from(document.querySelectorAll('input[name="requirements"]:checked')).map(cb => cb.value)
             };
 
-            // Get user information from localStorage
-            const userData = JSON.parse(localStorage.getItem('homefix_user') || '{}');
-            
-            // Create request for agent dashboard
-            const requests = JSON.parse(localStorage.getItem('agent_requests') || '[]');
-            const newRequestId = requests.length > 0 ? Math.max(...requests.map(r => r.id)) + 1 : 1;
+            // Get user information
+            const userData = await sessionDB.get('homefix_user') || {};
             
             const newRequest = {
-                id: newRequestId,
                 clientName: userData.name || 'Guest User',
                 clientEmail: userData.email || 'guest@example.com',
                 clientPhone: formData.phone,
@@ -4937,20 +5456,18 @@
                 preferredTime: formData.time,
                 urgency: formData.urgency,
                 requirements: formData.requirements,
-                status: 'pending',
-                createdAt: new Date().toISOString()
+                status: 'pending'
             };
             
-            requests.push(newRequest);
-            localStorage.setItem('agent_requests', JSON.stringify(requests));
+            // Save request to Firestore
+            const result = await firebaseRequests.createRequest(newRequest);
             
-            // Also save to user's requests for their view
-            const userRequests = JSON.parse(localStorage.getItem(`user_requests_${userData.email}`) || '[]');
-            userRequests.push({
-                ...newRequest,
-                status: 'pending'
-            });
-            localStorage.setItem(`user_requests_${userData.email}`, JSON.stringify(userRequests));
+            if (!result.success) {
+                alert('Error creating request. Please try again.');
+                return;
+            }
+            
+            newRequest.id = result.id; // Store the generated ID
 
             // Populate confirmation details
             const confirmationDetails = document.getElementById('confirmation-details');
@@ -4992,11 +5509,11 @@
         }
 
         // Render Tasks
-        function renderTasks() {
+        async function renderTasks() {
             const container = document.getElementById('tasks-container');
             
             // Get current user's email
-            const userData = JSON.parse(localStorage.getItem('homefix_user') || '{}');
+            const userData = await sessionDB.get('homefix_user') || {};
             const userEmail = userData.email;
             
             if (!userEmail) {
@@ -5004,8 +5521,20 @@
                 return;
             }
             
-            // Load user's actual requests from localStorage
-            const userRequests = JSON.parse(localStorage.getItem(`user_requests_${userEmail}`) || '[]');
+            // Load user's actual requests from Firestore
+            const result = await firebaseRequests.getUserRequests(userEmail);
+            const userRequests = result.success ? result.data : [];
+            
+            // Convert Firestore timestamps to dates
+            userRequests.forEach(request => {
+                if (request.createdAt) {
+                    const date = convertTimestamp(request.createdAt);
+                    request.createdAt = date.toISOString();
+                    if (!request.date) {
+                        request.date = date.toLocaleDateString();
+                    }
+                }
+            });
             
             // Filter by tab (current = pending/assigned, past = completed)
             let filteredRequests = [];
@@ -5075,8 +5604,8 @@
         }
 
         // View User Request (new function for actual user requests)
-        function viewUserRequest(requestId) {
-            const userData = JSON.parse(localStorage.getItem('homefix_user') || '{}');
+        async function viewUserRequest(requestId) {
+            const userData = await sessionDB.get('homefix_user') || {};
             const userEmail = userData.email;
             
             if (!userEmail) {
@@ -5084,12 +5613,22 @@
                 return;
             }
             
-            const userRequests = JSON.parse(localStorage.getItem(`user_requests_${userEmail}`) || '[]');
-            const request = userRequests.find(r => r.id === requestId);
+            const result = await firebaseRequests.getRequest(requestId);
             
-            if (!request) {
+            if (!result.success || !result.data) {
                 alert('Request not found.');
                 return;
+            }
+            
+            const request = result.data;
+            
+            // Convert Firestore timestamp if needed
+            if (request.createdAt) {
+                const date = convertTimestamp(request.createdAt);
+                request.createdAt = date.toISOString();
+                if (!request.date) {
+                    request.date = date.toLocaleDateString();
+                }
             }
             
             if (request.invoice) {
@@ -5451,6 +5990,7 @@
             const authContainer = document.getElementById('auth-container');
             
             landingPage.classList.add('hidden');
+            landingPage.style.display = ''; // Remove inline style to allow CSS class to work
             authContainer.classList.remove('hidden');
             
             if (page === 'register') {
@@ -5475,9 +6015,11 @@
         }
 
         // Authentication Functions
-        function checkAuthStatus() {
-            const isAuthenticated = localStorage.getItem('homefix_authenticated') === 'true';
-            const isAgentAuthenticated = localStorage.getItem('agent_authenticated') === 'true';
+        async function checkAuthStatus() {
+            // Check Firebase auth state
+            const currentUser = firebaseAuth.getCurrentUser();
+            const isAgentAuthenticated = await sessionDB.get('agent_authenticated') === 'true';
+            
             const landingPage = document.getElementById('landing-page');
             const authContainer = document.getElementById('auth-container');
             const agentContainer = document.getElementById('agent-container');
@@ -5489,8 +6031,22 @@
                 return;
             }
             
-            if (isAuthenticated) {
+            if (currentUser) {
+                // User is authenticated with Firebase
+                // Sync user data from Firestore if needed
+                const userDataResult = await firebaseUsers.getUser(currentUser.uid);
+                if (userDataResult.success) {
+                    await sessionDB.set('homefix_authenticated', 'true');
+                    await sessionDB.set('homefix_user', {
+                        uid: currentUser.uid,
+                        name: userDataResult.data.name,
+                        email: userDataResult.data.email,
+                        phone: userDataResult.data.phone
+                    });
+                }
+                
                 landingPage.classList.add('hidden');
+                landingPage.style.display = ''; // Remove inline style to allow CSS class to work
                 authContainer.classList.add('hidden');
                 agentContainer.classList.add('hidden');
                 agentDashboard.classList.remove('active');
@@ -5558,7 +6114,7 @@
                    </svg>`;
         }
 
-        function handleSignIn(event) {
+        async function handleSignIn(event) {
             event.preventDefault();
             clearMessages();
             
@@ -5572,35 +6128,53 @@
                 return;
             }
             
-            // Check if user exists in localStorage
-            const users = JSON.parse(localStorage.getItem('homefix_users') || '[]');
-            const user = users.find(u => u.email === email && u.password === password);
+            // Sign in with Firebase
+            const result = await firebaseAuth.signIn(email, password);
             
-            if (user) {
-                // Store authentication
-                localStorage.setItem('homefix_authenticated', 'true');
-                localStorage.setItem('homefix_user', JSON.stringify({
-                    name: user.name,
-                    email: user.email,
-                    phone: user.phone
-                }));
+            if (result.success) {
+                // Get user data from Firestore
+                const userDataResult = await firebaseUsers.getUser(result.user.uid);
                 
-                if (rememberMe) {
-                    localStorage.setItem('homefix_remember', 'true');
+                if (userDataResult.success) {
+                    const userData = userDataResult.data;
+                    
+                    // Store user session locally for quick access
+                    await sessionDB.set('homefix_authenticated', 'true');
+                    await sessionDB.set('homefix_user', {
+                        uid: result.user.uid,
+                        name: userData.name,
+                        email: userData.email,
+                        phone: userData.phone
+                    });
+                    
+                    if (rememberMe) {
+                        await sessionDB.set('homefix_remember', 'true');
+                    }
+                    
+                    showSuccess('signin-success', 'Sign in successful! Redirecting...');
+                    
+                    setTimeout(async () => {
+                        await checkAuthStatus();
+                        showScreen('home');
+                    }, 1000);
+                } else {
+                    showError('signin-error', 'Error loading user data. Please try again.');
                 }
-                
-                showSuccess('signin-success', 'Sign in successful! Redirecting...');
-                
-                setTimeout(() => {
-                    checkAuthStatus();
-                    showScreen('home');
-                }, 1000);
             } else {
-                showError('signin-error', 'Invalid email or password. Please try again.');
+                // Handle Firebase auth errors
+                let errorMessage = 'Invalid email or password. Please try again.';
+                if (result.error.includes('user-not-found')) {
+                    errorMessage = 'No account found with this email.';
+                } else if (result.error.includes('wrong-password')) {
+                    errorMessage = 'Incorrect password.';
+                } else if (result.error.includes('too-many-requests')) {
+                    errorMessage = 'Too many failed attempts. Please try again later.';
+                }
+                showError('signin-error', errorMessage);
             }
         }
 
-        function handleRegister(event) {
+        async function handleRegister(event) {
             event.preventDefault();
             clearMessages();
             
@@ -5632,39 +6206,38 @@
                 return;
             }
             
-            // Check if user already exists
-            const users = JSON.parse(localStorage.getItem('homefix_users') || '[]');
-            if (users.find(u => u.email === email)) {
-                showError('register-error', 'An account with this email already exists');
-                return;
+            // Create account with Firebase
+            const result = await firebaseAuth.signUp(email, password, { name, phone });
+            
+            if (result.success) {
+                // User is automatically signed in after registration
+                // Store user session locally
+                await sessionDB.set('homefix_authenticated', 'true');
+                await sessionDB.set('homefix_user', {
+                    uid: result.user.uid,
+                    name: name,
+                    email: email,
+                    phone: phone
+                });
+                
+                showSuccess('register-success', 'Account created successfully! Redirecting...');
+                
+                setTimeout(async () => {
+                    await checkAuthStatus();
+                    showScreen('home');
+                }, 1000);
+            } else {
+                // Handle Firebase auth errors
+                let errorMessage = 'Failed to create account. Please try again.';
+                if (result.error.includes('email-already-in-use')) {
+                    errorMessage = 'An account with this email already exists.';
+                } else if (result.error.includes('weak-password')) {
+                    errorMessage = 'Password is too weak. Please use a stronger password.';
+                } else if (result.error.includes('invalid-email')) {
+                    errorMessage = 'Invalid email address. Please check and try again.';
+                }
+                showError('register-error', errorMessage);
             }
-            
-            // Create new user
-            const newUser = {
-                name: name,
-                email: email,
-                phone: phone,
-                password: password,
-                createdAt: new Date().toISOString()
-            };
-            
-            users.push(newUser);
-            localStorage.setItem('homefix_users', JSON.stringify(users));
-            
-            // Auto sign in
-            localStorage.setItem('homefix_authenticated', 'true');
-            localStorage.setItem('homefix_user', JSON.stringify({
-                name: name,
-                email: email,
-                phone: phone
-            }));
-            
-            showSuccess('register-success', 'Account created successfully! Redirecting...');
-            
-            setTimeout(() => {
-                checkAuthStatus();
-                showScreen('home');
-            }, 1000);
         }
 
         function handleSocialAuth(provider) {
@@ -5672,13 +6245,18 @@
             alert(`${provider.charAt(0).toUpperCase() + provider.slice(1)} authentication will be implemented soon!`);
         }
 
-        function logout() {
-            localStorage.removeItem('homefix_authenticated');
-            localStorage.removeItem('homefix_user');
+        async function logout() {
+            // Sign out from Firebase
+            await firebaseAuth.signOut();
+            
+            // Clear local session
+            await sessionDB.remove('homefix_authenticated');
+            await sessionDB.remove('homefix_user');
+            
             // Clear forms
             document.getElementById('signin-form').reset();
             document.getElementById('register-form').reset();
-            checkAuthStatus();
+            await checkAuthStatus();
         }
 
         // Agent Login Functions
@@ -5687,10 +6265,11 @@
             const agentContainer = document.getElementById('agent-container');
             
             landingPage.classList.add('hidden');
+            landingPage.style.display = ''; // Remove inline style to allow CSS class to work
             agentContainer.classList.remove('hidden');
         }
 
-        function handleAgentLogin(event) {
+        async function handleAgentLogin(event) {
             event.preventDefault();
             
             const username = document.getElementById('agent-username').value;
@@ -5698,14 +6277,14 @@
             
             // Check for agent01 credentials
             if (username === 'agent01' && password === 'agentxyz123') {
-                localStorage.setItem('agent_authenticated', 'true');
-                localStorage.setItem('agent_username', 'agent01');
+                await sessionDB.set('agent_authenticated', 'true');
+                await sessionDB.set('agent_username', 'agent01');
                 showAgentDashboard();
             } 
             // Check for agent02 credentials
             else if (username === 'agent02' && password === 'agentxyz124') {
-                localStorage.setItem('agent_authenticated', 'true');
-                localStorage.setItem('agent_username', 'agent02');
+                await sessionDB.set('agent_authenticated', 'true');
+                await sessionDB.set('agent_username', 'agent02');
                 showAgentDashboard();
             } 
             else {
@@ -5713,11 +6292,16 @@
             }
         }
 
-        function showAgentDashboard() {
+        async function showAgentDashboard() {
+            const landingPage = document.getElementById('landing-page');
             const agentContainer = document.getElementById('agent-container');
             const agentDashboard = document.getElementById('agent-dashboard');
-            const agentUsername = localStorage.getItem('agent_username') || 'Agent';
+            const agentUsername = await sessionDB.get('agent_username') || 'Agent';
             
+            if (landingPage) {
+                landingPage.classList.add('hidden');
+                landingPage.style.display = ''; // Remove inline style to allow CSS class to work
+            }
             agentContainer.classList.add('hidden');
             agentDashboard.classList.add('active');
             
@@ -5730,24 +6314,35 @@
             loadAgentRequests();
         }
 
-        function agentLogout() {
-            localStorage.removeItem('agent_authenticated');
-            localStorage.removeItem('agent_username');
+        async function agentLogout() {
+            await sessionDB.remove('agent_authenticated');
+            await sessionDB.remove('agent_username');
             document.getElementById('agent-container').classList.remove('hidden');
             document.getElementById('agent-dashboard').classList.remove('active');
             showLandingPage();
         }
 
-        function loadAgentRequests() {
-            // Load requests from localStorage
-            let requests = JSON.parse(localStorage.getItem('agent_requests') || '[]');
+        async function loadAgentRequests() {
+            // Load requests from Firestore
+            const result = await firebaseRequests.getAllRequests();
+            let requests = result.success ? result.data : [];
+            
+            // Convert Firestore timestamps to dates
+            requests.forEach(request => {
+                if (request.createdAt) {
+                    const date = convertTimestamp(request.createdAt);
+                    request.createdAt = date.toISOString();
+                    if (!request.date) {
+                        request.date = date.toLocaleDateString();
+                    }
+                }
+            });
             
             // Only add sample data if no requests exist (first time)
             if (requests.length === 0) {
                 // Sample requests for demo
-                requests = [
+                const sampleRequests = [
                     {
-                        id: 1,
                         clientName: 'John Doe',
                         clientEmail: 'john@example.com',
                         clientPhone: '+1234567890',
@@ -5755,11 +6350,9 @@
                         description: 'Leaky faucet in kitchen needs immediate attention',
                         location: '123 Main St, Accra',
                         date: new Date().toLocaleDateString(),
-                        status: 'pending',
-                        createdAt: new Date().toISOString()
+                        status: 'pending'
                     },
                     {
-                        id: 2,
                         clientName: 'Jane Smith',
                         clientEmail: 'jane@example.com',
                         clientPhone: '+1234567891',
@@ -5767,15 +6360,36 @@
                         description: 'Need new ceiling fan installed in living room',
                         location: '456 Oak Ave, Accra',
                         date: new Date().toLocaleDateString(),
-                        status: 'pending',
-                        createdAt: new Date().toISOString()
+                        status: 'pending'
                     }
                 ];
-                localStorage.setItem('agent_requests', JSON.stringify(requests));
+                
+                for (const requestData of sampleRequests) {
+                    await firebaseRequests.createRequest(requestData);
+                }
+                
+                // Reload requests
+                const reloadResult = await firebaseRequests.getAllRequests();
+                requests = reloadResult.success ? reloadResult.data : [];
+                
+                // Convert timestamps again
+                requests.forEach(request => {
+                    if (request.createdAt) {
+                        const date = convertTimestamp(request.createdAt);
+                        request.createdAt = date.toISOString();
+                        if (!request.date) {
+                            request.date = date.toLocaleDateString();
+                        }
+                    }
+                });
             }
             
             // Sort requests by date (newest first)
-            requests.sort((a, b) => new Date(b.createdAt || b.date) - new Date(a.createdAt || a.date));
+            requests.sort((a, b) => {
+                const dateA = a.createdAt ? new Date(a.createdAt) : new Date(a.date || 0);
+                const dateB = b.createdAt ? new Date(b.createdAt) : new Date(b.date || 0);
+                return dateB - dateA;
+            });
             
             renderRequests(requests);
         }
@@ -5789,7 +6403,7 @@
             }
             
             container.innerHTML = requests.map(request => `
-                <div class="request-card" data-id="${request.id}">
+                <div class="request-card" data-id="${request.id}" data-request-id="${request.id}">
                     <div class="request-header">
                         <div class="request-info">
                             <h3>${request.service}</h3>
@@ -5902,12 +6516,12 @@
                     </div>
                     <div class="invoice-section" id="invoice-form-${request.id}">
                         <h4 style="margin-bottom: var(--spacing-lg); font-size: 18px; font-weight: 600;">Create Invoice</h4>
-                        <form onsubmit="createInvoice(event, ${request.id})">
+                        <form id="invoice-form-submit-${request.id}">
                             <div class="invoice-items" id="invoice-items-${request.id}">
                                 <div class="invoice-item">
                                     <input type="text" class="form-input" placeholder="Item Description" required>
                                     <input type="number" class="form-input" placeholder="Quantity" min="1" value="1" required oninput="updateInvoiceTotal(${request.id})">
-                                    <input type="number" class="form-input" placeholder="Unit Price" min="0" step="0.01" required oninput="updateInvoiceTotal(${request.id})">
+                                    <input type="number" class="form-input" placeholder="Unit Price" min="0" step="0.01" value="0" required oninput="updateInvoiceTotal(${request.id})">
                                     <button type="button" class="btn btn-ghost" onclick="removeInvoiceItem(this)" style="padding: var(--spacing-xs);">Remove</button>
                                 </div>
                             </div>
@@ -5917,13 +6531,33 @@
                                 <span id="invoice-total-${request.id}">₵0.00</span>
                             </div>
                             <div class="request-actions">
-                                <button type="submit" class="btn btn-primary">Send Invoice to Client</button>
+                                <button type="button" class="btn btn-primary send-invoice-btn" data-request-id="${request.id}">Send Invoice to Client</button>
                                 <button type="button" class="btn btn-ghost" onclick="hideInvoiceForm(${request.id})">Cancel</button>
                             </div>
                         </form>
                     </div>
                 </div>
             `).join('');
+            
+            // Attach event listeners to send invoice buttons using event delegation
+            container.addEventListener('click', function(e) {
+                if (e.target.classList.contains('send-invoice-btn')) {
+                    const requestId = e.target.getAttribute('data-request-id');
+                    if (requestId) {
+                        handleCreateInvoice(requestId);
+                    }
+                }
+            });
+            
+            // Initialize totals for all visible invoice forms
+            requests.forEach(request => {
+                const invoiceForm = document.getElementById(`invoice-form-${request.id}`);
+                if (invoiceForm && invoiceForm.classList.contains('active')) {
+                    setTimeout(() => {
+                        updateInvoiceTotal(request.id);
+                    }, 100);
+                }
+            });
         }
 
         function showAssignProviderForm(requestId) {
@@ -5934,7 +6568,7 @@
             document.getElementById(`assign-form-${requestId}`).classList.remove('active');
         }
 
-        function assignProvider(event, requestId) {
+        async function assignProvider(event, requestId) {
             event.preventDefault();
             
             const providerName = document.getElementById(`provider-name-${requestId}`).value;
@@ -5947,10 +6581,10 @@
                 return;
             }
             
-            let requests = JSON.parse(localStorage.getItem('agent_requests') || '[]');
-            const request = requests.find(r => r.id === requestId);
+            const result = await firebaseRequests.getRequest(requestId);
             
-            if (request) {
+            if (result.success && result.data) {
+                const request = result.data;
                 const providerData = {
                     name: providerName,
                     email: providerEmail,
@@ -5959,18 +6593,11 @@
                     assignedAt: new Date().toISOString()
                 };
                 
-                request.status = 'assigned';
-                request.provider = providerData;
-                localStorage.setItem('agent_requests', JSON.stringify(requests));
-                
-                // Update client's request view
-                const userRequests = JSON.parse(localStorage.getItem(`user_requests_${request.clientEmail}`) || '[]');
-                const userRequest = userRequests.find(r => r.id === requestId);
-                if (userRequest) {
-                    userRequest.status = 'assigned';
-                    userRequest.provider = providerData;
-                    localStorage.setItem(`user_requests_${request.clientEmail}`, JSON.stringify(userRequests));
-                }
+                // Update request in Firestore
+                await firebaseRequests.updateRequest(requestId, {
+                    status: 'assigned',
+                    provider: providerData
+                });
                 
                 loadAgentRequests();
                 alert(`✅ Provider assigned successfully!\n\nProvider: ${providerName}\nEmail: ${providerEmail}\nPhone: ${providerPhone}\n\nThe client has been notified.`);
@@ -5979,25 +6606,37 @@
 
         function showInvoiceForm(requestId) {
             const invoiceForm = document.getElementById(`invoice-form-${requestId}`);
+            if (!invoiceForm) {
+                console.error('Invoice form not found:', requestId);
+                return;
+            }
             invoiceForm.classList.add('active');
             
             // Reset invoice form if it was previously filled
             const itemsContainer = document.getElementById(`invoice-items-${requestId}`);
+            if (!itemsContainer) {
+                console.error('Items container not found:', requestId);
+                return;
+            }
+            
             itemsContainer.innerHTML = `
                 <div class="invoice-item">
                     <input type="text" class="form-input" placeholder="Item Description" required>
                     <input type="number" class="form-input" placeholder="Quantity" min="1" value="1" required oninput="updateInvoiceTotal(${requestId})">
-                    <input type="number" class="form-input" placeholder="Unit Price" min="0" step="0.01" required oninput="updateInvoiceTotal(${requestId})">
+                    <input type="number" class="form-input" placeholder="Unit Price" min="0" step="0.01" value="0" required oninput="updateInvoiceTotal(${requestId})">
                     <button type="button" class="btn btn-ghost" onclick="removeInvoiceItem(this)" style="padding: var(--spacing-xs);">Remove</button>
                 </div>
             `;
             
-            updateInvoiceTotal(requestId);
+            // Update total after a short delay to ensure DOM is ready
+            setTimeout(() => {
+                updateInvoiceTotal(requestId);
+            }, 100);
         }
         
-        function viewInvoice(requestId) {
-            const requests = JSON.parse(localStorage.getItem('agent_requests') || '[]');
-            const request = requests.find(r => r.id === requestId);
+        async function viewInvoice(requestId) {
+            const result = await firebaseRequests.getRequest(requestId);
+            const request = result.success ? result.data : null;
             
             if (request && request.invoice) {
                 const invoice = request.invoice;
@@ -6028,9 +6667,9 @@
             }
         }
         
-        function resendInvoice(requestId) {
-            const requests = JSON.parse(localStorage.getItem('agent_requests') || '[]');
-            const request = requests.find(r => r.id === requestId);
+        async function resendInvoice(requestId) {
+            const result = await firebaseRequests.getRequest(requestId);
+            const request = result.success ? result.data : null;
             
             if (request && request.invoice) {
                 const invoice = request.invoice;
@@ -6051,15 +6690,25 @@
 
         function addInvoiceItem(requestId) {
             const container = document.getElementById(`invoice-items-${requestId}`);
+            if (!container) {
+                console.error('Items container not found:', requestId);
+                return;
+            }
+            
             const item = document.createElement('div');
             item.className = 'invoice-item';
             item.innerHTML = `
                 <input type="text" class="form-input" placeholder="Item Description" required>
                 <input type="number" class="form-input" placeholder="Quantity" min="1" value="1" required oninput="updateInvoiceTotal(${requestId})">
-                <input type="number" class="form-input" placeholder="Unit Price" min="0" step="0.01" required oninput="updateInvoiceTotal(${requestId})">
+                <input type="number" class="form-input" placeholder="Unit Price" min="0" step="0.01" value="0" required oninput="updateInvoiceTotal(${requestId})">
                 <button type="button" class="btn btn-ghost" onclick="removeInvoiceItem(this)" style="padding: var(--spacing-xs);">Remove</button>
             `;
             container.appendChild(item);
+            
+            // Update total after adding item
+            setTimeout(() => {
+                updateInvoiceTotal(requestId);
+            }, 50);
         }
 
         function removeInvoiceItem(button) {
@@ -6069,44 +6718,116 @@
         }
 
         function updateInvoiceTotal(requestId) {
-            const items = document.querySelectorAll(`#invoice-items-${requestId} .invoice-item`);
-            let total = 0;
-            
-            items.forEach(item => {
-                const quantity = parseFloat(item.querySelector('input[type="number"]:nth-of-type(1)').value) || 0;
-                const price = parseFloat(item.querySelector('input[type="number"]:nth-of-type(2)').value) || 0;
-                total += quantity * price;
-            });
-            
-            document.getElementById(`invoice-total-${requestId}`).textContent = `₵${total.toFixed(2)}`;
+            try {
+                const itemsContainer = document.getElementById(`invoice-items-${requestId}`);
+                if (!itemsContainer) {
+                    console.warn('Items container not found for updateInvoiceTotal:', requestId);
+                    return;
+                }
+                
+                const items = itemsContainer.querySelectorAll('.invoice-item');
+                let total = 0;
+                
+                items.forEach(item => {
+                    const quantityInput = item.querySelector('input[type="number"]:nth-of-type(1)');
+                    const priceInput = item.querySelector('input[type="number"]:nth-of-type(2)');
+                    
+                    if (quantityInput && priceInput) {
+                        const quantity = parseFloat(quantityInput.value) || 0;
+                        const price = parseFloat(priceInput.value) || 0;
+                        total += quantity * price;
+                    }
+                });
+                
+                const totalElement = document.getElementById(`invoice-total-${requestId}`);
+                if (totalElement) {
+                    totalElement.textContent = `₵${total.toFixed(2)}`;
+                }
+            } catch (error) {
+                console.error('Error updating invoice total:', error);
+            }
         }
 
-        function createInvoice(event, requestId) {
-            event.preventDefault();
+        // Wrapper function for button click
+        async function handleCreateInvoice(requestId) {
+            console.log('handleCreateInvoice called with requestId:', requestId);
+            try {
+                await createInvoice(null, requestId);
+            } catch (error) {
+                console.error('Error in createInvoice:', error);
+                alert('An error occurred while creating the invoice. Please check the console for details.');
+            }
+        }
+        
+        async function createInvoice(event, requestId) {
+            // Prevent default if event exists (form submission)
+            if (event && event.preventDefault) {
+                event.preventDefault();
+            }
+            
+            // Convert requestId to number if it's a string
+            requestId = typeof requestId === 'string' ? parseInt(requestId, 10) : requestId;
+            
+            console.log('createInvoice called with requestId:', requestId, 'type:', typeof requestId);
             
             const items = [];
-            const itemElements = document.querySelectorAll(`#invoice-items-${requestId} .invoice-item`);
+            const itemsContainer = document.getElementById(`invoice-items-${requestId}`);
+            
+            if (!itemsContainer) {
+                console.error('Items container not found:', `invoice-items-${requestId}`);
+                alert('Error: Invoice form not found. Please refresh the page and try again.');
+                return;
+            }
+            
+            const itemElements = itemsContainer.querySelectorAll('.invoice-item');
+            console.log('Found invoice items:', itemElements.length);
             
             if (itemElements.length === 0) {
                 alert('Please add at least one invoice item.');
                 return;
             }
             
-            itemElements.forEach(item => {
-                const description = item.querySelector('input[type="text"]').value;
-                const quantity = parseFloat(item.querySelector('input[type="number"]:nth-of-type(1)').value);
-                const price = parseFloat(item.querySelector('input[type="number"]:nth-of-type(2)').value);
-                
-                if (!description || quantity <= 0 || price <= 0) {
-                    return; // Skip invalid items
+            itemElements.forEach((item, index) => {
+                try {
+                    const descriptionInput = item.querySelector('input[type="text"]');
+                    const quantityInput = item.querySelector('input[type="number"]:nth-of-type(1)');
+                    const priceInput = item.querySelector('input[type="number"]:nth-of-type(2)');
+                    
+                    if (!descriptionInput || !quantityInput || !priceInput) {
+                        console.warn('Missing input fields in item', index);
+                        return;
+                    }
+                    
+                    const description = descriptionInput.value.trim();
+                    const quantityStr = quantityInput.value.trim();
+                    const priceStr = priceInput.value.trim();
+                    
+                    // Check if fields are empty
+                    if (!description || !quantityStr || !priceStr) {
+                        console.warn('Empty fields in item', index, { description, quantityStr, priceStr });
+                        return; // Skip items with empty fields
+                    }
+                    
+                    const quantity = parseFloat(quantityStr);
+                    const price = parseFloat(priceStr);
+                    
+                    // Check if values are valid numbers and greater than 0
+                    if (isNaN(quantity) || isNaN(price) || quantity <= 0 || price <= 0) {
+                        console.warn('Invalid values in item', index, { quantity, price });
+                        return; // Skip invalid items
+                    }
+                    
+                    console.log(`Item ${index}:`, { description, quantity, price });
+                    
+                    items.push({ 
+                        description, 
+                        quantity, 
+                        price, 
+                        total: quantity * price 
+                    });
+                } catch (error) {
+                    console.error('Error processing item', index, ':', error);
                 }
-                
-                items.push({ 
-                    description, 
-                    quantity, 
-                    price, 
-                    total: quantity * price 
-                });
             });
             
             if (items.length === 0) {
@@ -6121,48 +6842,56 @@
                 return;
             }
             
-            let requests = JSON.parse(localStorage.getItem('agent_requests') || '[]');
-            const request = requests.find(r => r.id === requestId);
+            // Get request from Firestore
+            const result = await firebaseRequests.getRequest(requestId);
             
-            if (request) {
-                const invoiceData = {
-                    id: `INV-${Date.now()}`,
-                    requestId: requestId,
-                    items: items,
-                    total: total,
-                    date: new Date().toLocaleDateString(),
-                    time: new Date().toLocaleTimeString(),
-                    status: 'sent',
-                    sentAt: new Date().toISOString()
-                };
-                
-                request.invoice = invoiceData;
-                request.status = 'completed';
-                localStorage.setItem('agent_requests', JSON.stringify(requests));
-                
-                // Save invoice to client's view
-                const userRequests = JSON.parse(localStorage.getItem(`user_requests_${request.clientEmail}`) || '[]');
-                const userRequest = userRequests.find(r => r.id === requestId);
-                if (userRequest) {
-                    userRequest.invoice = invoiceData;
-                    userRequest.status = 'completed';
-                    localStorage.setItem(`user_requests_${request.clientEmail}`, JSON.stringify(userRequests));
-                }
-                
-                // Create formatted invoice message
-                const invoiceMessage = createInvoiceMessage(request, invoiceData);
-                
-                // Show success message with invoice details
-                const confirmMessage = `✅ Invoice sent successfully to ${request.clientEmail}\n\n` +
-                    `Invoice ID: ${invoiceData.id}\n` +
-                    `Total Amount: ₵${total.toFixed(2)}\n\n` +
-                    `Invoice Details:\n${invoiceMessage}\n\n` +
-                    `The client has been notified via email.`;
-                
-                alert(confirmMessage);
-                
+            if (!result.success || !result.data) {
+                alert('Error: Request not found. Please refresh the page and try again.');
+                return;
+            }
+            
+            const request = result.data;
+            const invoiceData = {
+                id: `INV-${Date.now()}`,
+                requestId: requestId,
+                items: items,
+                total: total,
+                date: new Date().toLocaleDateString(),
+                time: new Date().toLocaleTimeString(),
+                status: 'sent',
+                sentAt: new Date().toISOString()
+            };
+            
+            // Update request in Firestore
+            await firebaseRequests.updateRequest(requestId, {
+                invoice: invoiceData,
+                status: 'completed'
+            });
+            
+            // Create formatted invoice message
+            let invoiceMessage = '';
+            try {
+                invoiceMessage = createInvoiceMessage(request, invoiceData);
+            } catch (error) {
+                console.error('Error creating invoice message:', error);
+                invoiceMessage = `Service: ${request.service}\nTotal: ₵${total.toFixed(2)}`;
+            }
+            
+            // Show success message with invoice details
+            const confirmMessage = `✅ Invoice sent successfully to ${request.clientEmail}\n\n` +
+                `Invoice ID: ${invoiceData.id}\n` +
+                `Total Amount: ₵${total.toFixed(2)}\n\n` +
+                `Invoice Details:\n${invoiceMessage}\n\n` +
+                `The client has been notified via email.`;
+            
+            alert(confirmMessage);
+            
+            try {
                 loadAgentRequests();
                 hideInvoiceForm(requestId);
+            } catch (error) {
+                console.error('Error refreshing requests:', error);
+                // Still show success even if refresh fails
             }
         }
         
@@ -6185,14 +6914,14 @@
         }
 
         // Check agent authentication on load
-        function checkAgentAuth() {
-            const isAgentAuthenticated = localStorage.getItem('agent_authenticated') === 'true';
+        async function checkAgentAuth() {
+            const isAgentAuthenticated = await sessionDB.get('agent_authenticated') === 'true';
             const agentContainer = document.getElementById('agent-container');
             const agentDashboard = document.getElementById('agent-dashboard');
             
             if (isAgentAuthenticated) {
                 // Update welcome message before showing dashboard
-                const agentUsername = localStorage.getItem('agent_username') || 'Agent';
+                const agentUsername = await sessionDB.get('agent_username') || 'Agent';
                 const welcomeSpan = document.getElementById('agent-welcome');
                 if (welcomeSpan) {
                     welcomeSpan.textContent = `Welcome, ${agentUsername}`;
@@ -6221,11 +6950,33 @@
         }
 
         // Initialize function
-        function initializePage() {
+        async function initializePage() {
+            // Set up Firebase auth state listener
+            firebaseAuth.onAuthStateChanged(async (user) => {
+                if (user) {
+                    // User is signed in
+                    const userDataResult = await firebaseUsers.getUser(user.uid);
+                    if (userDataResult.success) {
+                        await sessionDB.set('homefix_authenticated', 'true');
+                        await sessionDB.set('homefix_user', {
+                            uid: user.uid,
+                            name: userDataResult.data.name,
+                            email: userDataResult.data.email,
+                            phone: userDataResult.data.phone
+                        });
+                    }
+                } else {
+                    // User is signed out
+                    await sessionDB.remove('homefix_authenticated');
+                    await sessionDB.remove('homefix_user');
+                }
+                await checkAuthStatus();
+            });
+            
             // Check agent auth first, then regular auth
             // This ensures proper priority: agent > regular user > landing page
-            const isAgentAuthenticated = localStorage.getItem('agent_authenticated') === 'true';
-            const isAuthenticated = localStorage.getItem('homefix_authenticated') === 'true';
+            const isAgentAuthenticated = await sessionDB.get('agent_authenticated') === 'true';
+            const currentUser = firebaseAuth.getCurrentUser();
             
             // Get all containers
             const landingPage = document.getElementById('landing-page');
@@ -6236,10 +6987,10 @@
             
             // Ensure proper initial state
             if (isAgentAuthenticated) {
-                checkAgentAuth();
-            } else if (isAuthenticated) {
-                checkAuthStatus();
-                checkAgentAuth(); // Still call to ensure agent containers are hidden
+                await checkAgentAuth();
+            } else if (currentUser) {
+                await checkAuthStatus();
+                await checkAgentAuth(); // Still call to ensure agent containers are hidden
             } else {
                 // Not authenticated - show landing page, hide everything else
                 if (landingPage) {
@@ -6253,7 +7004,7 @@
             }
             
             // Only call init if user is authenticated (to avoid errors)
-            if (isAuthenticated && !isAgentAuthenticated) {
+            if (currentUser && !isAgentAuthenticated) {
                 init();
             }
             initCTASlideshow();
