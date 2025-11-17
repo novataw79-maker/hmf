@@ -2520,6 +2520,42 @@
             color: var(--white);
         }
 
+        .sessions-list {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-md);
+        }
+
+        .session-empty {
+            padding: var(--spacing-xl);
+            text-align: center;
+            color: var(--neutral-500);
+            background: var(--neutral-50);
+            border-radius: var(--radius-md);
+            border: 1px dashed var(--neutral-200);
+            font-size: 14px;
+        }
+
+        .session-device-meta {
+            font-size: 12px;
+            color: var(--neutral-500);
+            margin-top: var(--spacing-xs);
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--spacing-sm);
+        }
+
+        .session-device-meta span {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .session-device-meta svg {
+            width: 14px;
+            height: 14px;
+        }
+
         /* Responsive Design */
         @media (max-width: 1024px) {
             .nav-search {
@@ -5692,6 +5728,319 @@
             }
         };
 
+        const sessionManager = (() => {
+            const COLLECTION = 'userSessions';
+            const SESSION_KEY = 'current_session_id';
+            const SESSION_OWNER_KEY = 'current_session_owner';
+            let currentSessionId = null;
+            let currentUserId = null;
+            let heartbeatInterval = null;
+            let unsubscribe = null;
+
+            const hasFirestore = () => typeof firebase !== 'undefined' && firebaseInitialized && db;
+
+            const getCollection = () => {
+                if (!hasFirestore()) {
+                    throw new Error('Firestore is not initialized');
+                }
+                return db.collection(COLLECTION);
+            };
+
+            const detectDevice = () => {
+                const ua = navigator.userAgent || '';
+                const platform = navigator.platform || 'Unknown';
+                const isMobile = /mobile|android|iphone|ipad|ipod/i.test(ua);
+                let browser = 'Browser';
+                if (/edg/i.test(ua)) browser = 'Microsoft Edge';
+                else if (/chrome|crios|crmo/i.test(ua) && !/edg/i.test(ua)) browser = 'Google Chrome';
+                else if (/safari/i.test(ua) && !/chrome|crios|crmo|edg/i.test(ua)) browser = 'Safari';
+                else if (/firefox|fxios/i.test(ua)) browser = 'Mozilla Firefox';
+                else if (/opr\//i.test(ua)) browser = 'Opera';
+
+                let os = 'Unknown OS';
+                if (/windows nt 10/i.test(ua)) os = 'Windows 10';
+                else if (/windows nt 11/i.test(ua)) os = 'Windows 11';
+                else if (/mac os x/i.test(ua)) os = 'macOS';
+                else if (/android/i.test(ua)) os = 'Android';
+                else if (/iphone|ipad|ipod/i.test(ua)) os = 'iOS';
+                else if (/linux/i.test(ua)) os = 'Linux';
+
+                const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone || 'Unknown timezone';
+
+                return {
+                    deviceLabel: isMobile ? 'Mobile Device' : 'Desktop / Laptop',
+                    browser,
+                    os,
+                    platform,
+                    timezone,
+                    userAgent: ua
+                };
+            };
+
+            async function ensureSessionId(userId) {
+                if (!currentSessionId) {
+                    currentSessionId = await sessionDB.get(SESSION_KEY);
+                }
+                const owner = await sessionDB.get(SESSION_OWNER_KEY);
+                if (!currentSessionId || owner !== userId) {
+                    currentSessionId = (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2) + Date.now());
+                    await sessionDB.set(SESSION_KEY, currentSessionId);
+                    await sessionDB.set(SESSION_OWNER_KEY, userId);
+                }
+                return currentSessionId;
+            }
+
+            async function resolveUserId() {
+                if (currentUserId) return currentUserId;
+                const authUser = firebaseAuth.getCurrentUser();
+                if (authUser) {
+                    currentUserId = authUser.uid;
+                    return currentUserId;
+                }
+                const storedUser = await sessionDB.get('homefix_user');
+                if (storedUser && storedUser.uid) {
+                    currentUserId = storedUser.uid;
+                    return currentUserId;
+                }
+                return null;
+            }
+
+            async function ensureActiveSession(userId) {
+                if (!userId || !hasFirestore()) return;
+                currentUserId = userId;
+                const sessionId = await ensureSessionId(userId);
+                const info = detectDevice();
+                try {
+                    await getCollection().doc(`${userId}_${sessionId}`).set({
+                        userId,
+                        sessionId,
+                        deviceLabel: info.deviceLabel,
+                        browser: info.browser,
+                        os: info.os,
+                        platform: info.platform,
+                        timezone: info.timezone,
+                        userAgent: info.userAgent,
+                        lastActive: firebase.firestore.FieldValue.serverTimestamp(),
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        active: true
+                    }, { merge: true });
+                    startHeartbeat(userId, sessionId);
+                } catch (error) {
+                    console.warn('Failed to register session:', error);
+                }
+            }
+
+            function startHeartbeat(userId, sessionId) {
+                stopHeartbeat();
+                heartbeatInterval = setInterval(() => {
+                    if (!hasFirestore()) return;
+                    getCollection().doc(`${userId}_${sessionId}`).set({
+                        lastActive: firebase.firestore.FieldValue.serverTimestamp(),
+                        active: true
+                    }, { merge: true }).catch(error => console.warn('Heartbeat failed:', error));
+                }, 60000);
+            }
+
+            function stopHeartbeat() {
+                if (heartbeatInterval) {
+                    clearInterval(heartbeatInterval);
+                    heartbeatInterval = null;
+                }
+            }
+
+            async function endSession() {
+                if (!hasFirestore()) {
+                    await sessionDB.remove(SESSION_KEY);
+                    await sessionDB.remove(SESSION_OWNER_KEY);
+                    currentSessionId = null;
+                    stopHeartbeat();
+                    return;
+                }
+                const userId = currentUserId || await resolveUserId();
+                if (userId && currentSessionId) {
+                    try {
+                        await getCollection().doc(`${userId}_${currentSessionId}`).set({
+                            active: false,
+                            endedAt: firebase.firestore.FieldValue.serverTimestamp()
+                        }, { merge: true });
+                    } catch (error) {
+                        console.warn('Failed to end session:', error);
+                    }
+                }
+                await sessionDB.remove(SESSION_KEY);
+                await sessionDB.remove(SESSION_OWNER_KEY);
+                currentSessionId = null;
+                stopHeartbeat();
+            }
+
+            const toDate = (value) => {
+                if (!value) return new Date();
+                if (value.toDate) return value.toDate();
+                return new Date(value);
+            };
+
+            const formatRelative = (date) => {
+                const diff = Date.now() - date.getTime();
+                if (diff < 60000) return 'Just now';
+                if (diff < 3600000) return `${Math.floor(diff / 60000)} minute(s) ago`;
+                if (diff < 86400000) return `${Math.floor(diff / 3600000)} hour(s) ago`;
+                return `${Math.floor(diff / 86400000)} day(s) ago`;
+            };
+
+            function renderSessions(userId, sessions) {
+                const container = document.getElementById('sessions-list');
+                if (!container) return;
+
+                if (!sessions.length) {
+                    container.innerHTML = '<div class="session-empty">No other devices are signed in.</div>';
+                    return;
+                }
+
+                container.innerHTML = sessions.map(session => {
+                    const isCurrent = session.sessionId === currentSessionId;
+                    const lastActive = session.lastActive || session.createdAt;
+                    const lastActiveText = formatRelative(toDate(lastActive));
+                    const locationText = session.city && session.country
+                        ? `${session.city}, ${session.country}`
+                        : (session.timezone || 'Unknown timezone');
+
+                    return `
+                        <div class="session-item" data-session-row="${session.sessionId}">
+                            <div class="session-info">
+                                <div class="session-device">
+                                    <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin-right: var(--spacing-md);">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                                    </svg>
+                                    <div>
+                                        <div class="session-device-name">${session.deviceLabel || 'Device'} • ${session.browser || 'Browser'}</div>
+                                        <div class="session-location">${locationText}</div>
+                                        <div class="session-device-meta">
+                                            <span>
+                                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3"></path>
+                                                </svg>
+                                                Last active: ${lastActiveText}
+                                            </span>
+                                            <span>
+                                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4z"></path>
+                                                </svg>
+                                                ${session.os || 'Unknown OS'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                                ${isCurrent
+                                    ? '<span class="session-status active">Current Session</span>'
+                                    : `<button class="btn btn-ghost session-revoke-btn" data-session-id="${session.sessionId}">Revoke</button>`}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+
+                container.querySelectorAll('.session-revoke-btn').forEach(button => {
+                    button.addEventListener('click', async (event) => {
+                        event.preventDefault();
+                        const sessionId = button.getAttribute('data-session-id');
+                        await revokeSession(sessionId);
+                    });
+                });
+            }
+
+            function subscribeToSessions(userId) {
+                const container = document.getElementById('sessions-list');
+                if (!container) return;
+                if (!hasFirestore()) {
+                    container.innerHTML = '<div class="session-empty">Session service is not available.</div>';
+                    return;
+                }
+                container.innerHTML = '<div class="session-empty">Loading active sessions...</div>';
+                if (unsubscribe) unsubscribe();
+                currentUserId = userId;
+                unsubscribe = getCollection()
+                    .where('userId', '==', userId)
+                    .orderBy('lastActive', 'desc')
+                    .onSnapshot(snapshot => {
+                        const sessions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                        renderSessions(userId, sessions);
+                    }, error => {
+                        console.error('Session listener error:', error);
+                        container.innerHTML = `<div class="session-empty">Unable to load sessions.<br>${error.message || 'Please try again later.'}</div>`;
+                    });
+            }
+
+            function unsubscribeFromSessions() {
+                if (unsubscribe) {
+                    unsubscribe();
+                    unsubscribe = null;
+                }
+            }
+
+            async function revokeSession(sessionId) {
+                if (!sessionId) return;
+                if (!hasFirestore()) {
+                    alert('Session service is not available.');
+                    return;
+                }
+                if (sessionId === currentSessionId) {
+                    alert('You are currently using this session. Please logout to end it.');
+                    return;
+                }
+                const userId = await resolveUserId();
+                if (!userId) {
+                    alert('Please sign in to manage sessions.');
+                    return;
+                }
+                const confirmed = confirm('Revoke this session? The device will be signed out immediately.');
+                if (!confirmed) return;
+                try {
+                    await getCollection().doc(`${userId}_${sessionId}`).delete();
+                } catch (error) {
+                    console.error('Failed to revoke session:', error);
+                    alert(error.message || 'Unable to revoke session.');
+                }
+            }
+
+            async function revokeAllSessions() {
+                if (!hasFirestore()) {
+                    alert('Session service is not available.');
+                    return;
+                }
+                const confirmed = confirm('Sign out from all other devices? You will stay signed in on this one.');
+                if (!confirmed) return;
+                try {
+                    const userId = await resolveUserId();
+                    if (!userId) {
+                        alert('Please sign in to manage sessions.');
+                        return;
+                    }
+                    const snapshot = await getCollection().where('userId', '==', userId).get();
+                    const batch = db.batch();
+                    snapshot.forEach(doc => {
+                        const data = doc.data();
+                        if (data.sessionId && data.sessionId === currentSessionId) return;
+                        batch.delete(doc.ref);
+                    });
+                    await batch.commit();
+                    alert('All other sessions have been revoked.');
+                } catch (error) {
+                    console.error('Failed to revoke sessions:', error);
+                    alert(error.message || 'Unable to revoke sessions.');
+                }
+            }
+
+            return {
+                ensureActiveSession,
+                subscribeToSessions,
+                unsubscribeFromSessions,
+                revokeSession,
+                revokeAllSessions,
+                endSession,
+                getCurrentSessionId: () => currentSessionId,
+                getCurrentUserId: () => currentUserId
+            };
+        })();
+
         // Database API - Agents
         const agentDB = {
             async getAll() {
@@ -7555,41 +7904,14 @@
             <div class="settings-card">
                 <div class="settings-section">
                     <h2 class="settings-section-title">Current Sessions</h2>
-                    <div class="session-item">
-                        <div class="session-info">
-                            <div class="session-device">
-                                <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin-right: var(--spacing-md);">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
-                                </svg>
-                                <div>
-                                    <div class="session-device-name">Windows PC - Chrome</div>
-                                    <div class="session-location">Accra, Ghana</div>
-                                    <div class="session-time">Last active: Just now</div>
-                                </div>
-                            </div>
-                            <span class="session-status active">Current Session</span>
-                        </div>
-                    </div>
-                    <div class="session-item">
-                        <div class="session-info">
-                            <div class="session-device">
-                                <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin-right: var(--spacing-md);">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
-                                </svg>
-                                <div>
-                                    <div class="session-device-name">iPhone 13 - Safari</div>
-                                    <div class="session-location">Accra, Ghana</div>
-                                    <div class="session-time">Last active: 2 hours ago</div>
-                                </div>
-                            </div>
-                            <button class="btn btn-ghost" onclick="revokeSession(this)">Revoke</button>
-                        </div>
+                    <div id="sessions-list" class="sessions-list">
+                        <div class="session-empty">Loading active sessions...</div>
                     </div>
                 </div>
 
                 <div class="settings-section">
                     <h2 class="settings-section-title">Security Actions</h2>
-                    <button class="btn btn-primary" onclick="revokeAllSessions()">Sign Out All Other Devices</button>
+                    <button class="btn btn-primary" onclick="handleRevokeAllSessions()">Sign Out All Other Devices</button>
                     <p style="color: var(--neutral-600); font-size: 14px; margin-top: var(--spacing-md);">
                         This will sign you out of all devices except this one.
                     </p>
@@ -8142,6 +8464,24 @@
                 chatMessageListener();
                 chatMessageListener = null;
                 currentChatId = null;
+            }
+
+            if (screen === 'active-sessions') {
+                const authUser = firebaseAuth.getCurrentUser();
+                const storedUser = await sessionDB.get('homefix_user');
+                const userId = authUser ? authUser.uid : (storedUser ? storedUser.uid : null);
+                if (userId) {
+                    await sessionManager.ensureActiveSession(userId);
+                    sessionManager.subscribeToSessions(userId);
+                } else {
+                    sessionManager.unsubscribeFromSessions();
+                    const sessionsList = document.getElementById('sessions-list');
+                    if (sessionsList) {
+                        sessionsList.innerHTML = '<div class="session-empty">Sign in to view your sessions.</div>';
+                    }
+                }
+            } else {
+                sessionManager.unsubscribeFromSessions();
             }
             
             // Scroll to top
@@ -9947,6 +10287,7 @@
                 console.log('User is authenticated, updating UI');
                 // User is authenticated with Firebase
                 const userId = currentUser ? currentUser.uid : localUser.uid;
+                await sessionManager.ensureActiveSession(userId);
                 
                 // Sync user data from Firestore if needed
                 if (currentUser) {
@@ -10089,21 +10430,12 @@
         }
 
         // Session Management Functions
-        function revokeSession(button) {
-            if (confirm('Are you sure you want to revoke this session? You will be signed out from this device.')) {
-                const sessionItem = button.closest('.session-item');
-                if (sessionItem) {
-                    sessionItem.style.opacity = '0.5';
-                    sessionItem.style.pointerEvents = 'none';
-                    button.textContent = 'Revoked';
-                    alert('Session revoked successfully');
-                }
-            }
-        }
-
-        function revokeAllSessions() {
-            if (confirm('Are you sure you want to sign out from all other devices? You will remain signed in on this device.')) {
-                alert('All other sessions have been revoked. You are now signed in only on this device.');
+        async function handleRevokeAllSessions() {
+            try {
+                await sessionManager.revokeAllSessions();
+            } catch (error) {
+                console.error('Failed to revoke sessions:', error);
+                alert(error.message || 'Unable to revoke sessions right now.');
             }
         }
 
@@ -10176,6 +10508,7 @@
                         email: userData.email,
                         phone: userData.phone
                     });
+                    await sessionManager.ensureActiveSession(result.user.uid);
                     
                     if (rememberMe) {
                         await sessionDB.set('homefix_remember', 'true');
@@ -10302,6 +10635,7 @@
                     
                     await sessionDB.set('homefix_authenticated', 'true');
                     await sessionDB.set('homefix_user', userData);
+                    await sessionManager.ensureActiveSession(user.uid);
                     
                     console.log('User session stored locally:', userData);
                     
@@ -10420,6 +10754,7 @@
                         
                         await sessionDB.set('homefix_authenticated', 'true');
                         await sessionDB.set('homefix_user', userData);
+                        await sessionManager.ensureActiveSession(user.uid);
                         
                         console.log('Google sign-in successful, user session stored:', userData);
                         
@@ -10462,6 +10797,8 @@
         }
 
         async function logout() {
+            sessionManager.unsubscribeFromSessions();
+            await sessionManager.endSession();
             // Sign out from Firebase
             await firebaseAuth.signOut();
             
