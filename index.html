@@ -2,7 +2,10 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <title>HomeFix - Professional Home Services</title>
     <style>
         * {
@@ -49,35 +52,349 @@
             --radius-xl: 16px;
             --radius-full: 9999px;
             
-            /* Shadows */
+            /* Enhanced Shadows */
             --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
             --shadow-md: 0 2px 4px rgba(0, 0, 0, 0.1);
             --shadow-lg: 0 4px 8px rgba(0, 0, 0, 0.15);
             --shadow-xl: 0 8px 16px rgba(0, 0, 0, 0.1);
+            --shadow-2xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            --shadow-glow: 0 0 20px rgba(165, 59, 43, 0.3);
+            
+            /* Glass Morphism */
+            --glass-bg: rgba(255, 255, 255, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.18);
+            --glass-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+            
+            /* Animation Durations */
+            --duration-fast: 0.15s;
+            --duration-normal: 0.3s;
+            --duration-slow: 0.5s;
+            --duration-slower: 0.8s;
+            
+            /* Animation Easing */
+            --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+            --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+            --ease-bounce: cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+
+        /* Global Animations */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes slideInLeft {
+            from {
+                opacity: 0;
+                transform: translateX(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        @keyframes scaleIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        @keyframes shimmer {
+            0% {
+                background-position: -1000px 0;
+            }
+            100% {
+                background-position: 1000px 0;
+            }
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0px);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.7;
+            }
+        }
+
+        @keyframes gradient {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
         }
 
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--white);
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            background-attachment: fixed;
             color: var(--neutral-900);
             line-height: 1.6;
             overflow-x: hidden;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
+            animation: fadeIn var(--duration-normal) var(--ease-out);
         }
 
         * {
             -webkit-tap-highlight-color: transparent;
         }
 
-        /* Top Navigation Bar - Fiverr Style */
+        /* Glass Morphism Utility Classes */
+        .glass {
+            background: var(--glass-bg);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+            box-shadow: var(--glass-shadow);
+        }
+
+        .glass-strong {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+        }
+
+        .glass-card {
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(16px) saturate(180%);
+            -webkit-backdrop-filter: blur(16px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.2);
+            transition: all var(--duration-normal) var(--ease-out);
+        }
+
+        .glass-card:hover {
+            background: rgba(255, 255, 255, 0.9);
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.3);
+        }
+
+        /* Animation Classes */
+        .animate-fade-in {
+            animation: fadeIn var(--duration-normal) var(--ease-out);
+        }
+
+        .animate-fade-in-up {
+            animation: fadeInUp var(--duration-slow) var(--ease-out);
+        }
+
+        .animate-slide-in-right {
+            animation: slideInRight var(--duration-normal) var(--ease-out);
+        }
+
+        .animate-slide-in-left {
+            animation: slideInLeft var(--duration-normal) var(--ease-out);
+        }
+
+        .animate-scale-in {
+            animation: scaleIn var(--duration-normal) var(--ease-bounce);
+        }
+
+        .animate-float {
+            animation: float 3s ease-in-out infinite;
+        }
+
+        /* Cookie Consent Banner */
+        .cookie-consent-banner {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 10000;
+            padding: var(--spacing-lg);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transform: translateY(100%);
+            transition: all var(--duration-slow) var(--ease-out);
+        }
+
+        .cookie-consent-banner.cookie-consent-show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .cookie-consent-banner.cookie-consent-hide {
+            opacity: 0;
+            transform: translateY(100%);
+        }
+
+        .cookie-consent-content {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: var(--radius-xl);
+            padding: var(--spacing-xl);
+            max-width: 1200px;
+            width: 100%;
+            box-shadow: 0 -8px 32px 0 rgba(31, 38, 135, 0.3);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xl);
+            animation: slideInUp var(--duration-slow) var(--ease-out);
+        }
+
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .cookie-consent-icon {
+            font-size: 48px;
+            flex-shrink: 0;
+            animation: float 3s ease-in-out infinite;
+        }
+
+        .cookie-consent-text {
+            flex: 1;
+        }
+
+        .cookie-consent-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--neutral-900);
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .cookie-consent-description {
+            font-size: 15px;
+            color: var(--neutral-700);
+            line-height: 1.6;
+            margin: 0;
+        }
+
+        .cookie-link {
+            color: var(--primary-500);
+            text-decoration: none;
+            font-weight: 600;
+            transition: color var(--duration-fast) var(--ease-out);
+        }
+
+        .cookie-link:hover {
+            color: var(--primary-600);
+            text-decoration: underline;
+        }
+
+        .cookie-consent-actions {
+            display: flex;
+            gap: var(--spacing-md);
+            flex-shrink: 0;
+        }
+
+        .cookie-btn {
+            white-space: nowrap;
+        }
+
+        @media (max-width: 768px) {
+            .cookie-consent-content {
+                flex-direction: column;
+                text-align: center;
+                gap: var(--spacing-lg);
+            }
+
+            .cookie-consent-actions {
+                width: 100%;
+                flex-direction: column;
+            }
+
+            .cookie-btn {
+                width: 100%;
+            }
+
+            .cookie-consent-icon {
+                font-size: 36px;
+            }
+
+            .cookie-consent-title {
+                font-size: 18px;
+            }
+
+            .cookie-consent-description {
+                font-size: 14px;
+            }
+        }
+
+        /* Top Navigation Bar - Enhanced with Glass */
         .top-nav {
-            background: var(--white);
-            border-bottom: 1px solid var(--neutral-200);
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.3);
             position: sticky;
             top: 0;
             z-index: 1000;
-            box-shadow: var(--shadow-sm);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            transition: all var(--duration-normal) var(--ease-out);
+        }
+
+        .top-nav::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0.7) 100%);
+            z-index: -1;
         }
 
         .nav-container {
@@ -110,6 +427,43 @@
         .logo img {
             height: 40px;
             width: auto;
+        }
+
+        .logo-video {
+            height: 40px;
+            width: auto;
+            object-fit: contain;
+            display: inline-block;
+            vertical-align: middle;
+            pointer-events: none;
+            user-select: none;
+            -webkit-user-select: none;
+            border-radius: var(--radius-sm);
+            background: transparent;
+            opacity: 1;
+            transition: opacity var(--duration-fast) var(--ease-out);
+        }
+
+        /* Ensure video doesn't show controls or pause on click */
+        .logo-video::-webkit-media-controls {
+            display: none !important;
+        }
+
+        .logo-video::-webkit-media-controls-enclosure {
+            display: none !important;
+        }
+
+        /* Mobile responsive video */
+        @media (max-width: 768px) {
+            .logo-video {
+                height: 32px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .logo-video {
+                height: 28px;
+            }
         }
 
         .location-badge {
@@ -321,11 +675,17 @@
             background: var(--primary-600);
         }
 
+        /* Smooth Scrolling */
+        html {
+            scroll-behavior: smooth;
+        }
+
         /* Main Container */
         .main-container {
             max-width: 1400px;
             margin: 0 auto;
             padding: var(--spacing-3xl) var(--spacing-lg);
+            animation: fadeIn var(--duration-slow) var(--ease-out);
         }
 
         /* Screen Container */
@@ -438,21 +798,33 @@
         }
 
         .category-card {
-            background: var(--white);
-            border: 1px solid var(--neutral-200);
-            border-radius: var(--radius-lg);
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(16px) saturate(180%);
+            -webkit-backdrop-filter: blur(16px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: var(--radius-xl);
             padding: var(--spacing-xl);
             cursor: pointer;
-            transition: all 0.3s;
+            transition: all var(--duration-normal) var(--ease-out);
             text-decoration: none;
             color: inherit;
             display: block;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+            animation: fadeInUp var(--duration-slow) var(--ease-out) backwards;
         }
 
+        .category-card:nth-child(1) { animation-delay: 0.1s; }
+        .category-card:nth-child(2) { animation-delay: 0.2s; }
+        .category-card:nth-child(3) { animation-delay: 0.3s; }
+        .category-card:nth-child(4) { animation-delay: 0.4s; }
+        .category-card:nth-child(5) { animation-delay: 0.5s; }
+        .category-card:nth-child(6) { animation-delay: 0.6s; }
+
         .category-card:hover {
-            transform: translateY(-4px);
-            box-shadow: var(--shadow-xl);
-            border-color: var(--primary-500);
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 16px 48px 0 rgba(31, 38, 135, 0.25), 0 0 0 1px rgba(165, 59, 43, 0.1);
+            border-color: rgba(165, 59, 43, 0.3);
+            background: rgba(255, 255, 255, 0.95);
         }
 
         .category-icon-wrapper {
@@ -550,16 +922,22 @@
         }
 
         .task-card {
-            background: var(--white);
-            border: 1px solid var(--neutral-200);
-            border-radius: var(--radius-lg);
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(16px) saturate(180%);
+            -webkit-backdrop-filter: blur(16px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            border-radius: var(--radius-xl);
             overflow: hidden;
-            transition: all 0.3s;
+            transition: all var(--duration-normal) var(--ease-out);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+            animation: fadeInUp var(--duration-normal) var(--ease-out) backwards;
         }
 
         .task-card:hover {
-            box-shadow: var(--shadow-lg);
-            transform: translateY(-2px);
+            box-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.25);
+            transform: translateY(-6px) scale(1.01);
+            background: rgba(255, 255, 255, 0.9);
+            border-color: rgba(165, 59, 43, 0.2);
         }
 
         .task-card-header {
@@ -758,12 +1136,36 @@
             font-size: 15px;
             font-weight: 600;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all var(--duration-normal) var(--ease-out);
             min-height: 44px; /* Touch-friendly */
             touch-action: manipulation;
             display: inline-flex;
             align-items: center;
             justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+
+        .btn:active {
+            transform: scale(0.98);
         }
 
         @media (max-width: 768px) {
@@ -774,22 +1176,34 @@
         }
 
         .btn-primary {
-            background: var(--primary-500);
+            background: linear-gradient(135deg, var(--primary-500) 0%, var(--primary-600) 100%);
             color: var(--white);
+            box-shadow: 0 4px 15px rgba(165, 59, 43, 0.3);
         }
 
         .btn-primary:hover {
-            background: var(--primary-600);
+            background: linear-gradient(135deg, var(--primary-600) 0%, var(--primary-700) 100%);
+            box-shadow: 0 6px 20px rgba(165, 59, 43, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0) scale(0.98);
         }
 
         .btn-ghost {
-            background: transparent;
+            background: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
             color: var(--primary-500);
-            border: 1px solid var(--primary-500);
+            border: 1px solid rgba(165, 59, 43, 0.3);
         }
 
         .btn-ghost:hover {
-            background: var(--primary-50);
+            background: rgba(254, 242, 242, 0.8);
+            border-color: var(--primary-500);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(165, 59, 43, 0.15);
         }
 
         /* Profile Notification */
@@ -974,10 +1388,19 @@
         }
 
         .service-info-card {
-            background: var(--white);
-            border: 1px solid var(--neutral-200);
-            border-radius: var(--radius-lg);
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(16px) saturate(180%);
+            -webkit-backdrop-filter: blur(16px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: var(--radius-xl);
             padding: var(--spacing-2xl);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+            transition: all var(--duration-normal) var(--ease-out);
+        }
+
+        .service-info-card:hover {
+            background: rgba(255, 255, 255, 0.95);
+            box-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.2);
         }
 
         .service-info-section {
@@ -1028,13 +1451,17 @@
         }
 
         .service-cta-card {
-            background: var(--white);
-            border: 1px solid var(--neutral-200);
-            border-radius: var(--radius-lg);
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: var(--radius-xl);
             padding: var(--spacing-2xl);
             position: sticky;
             top: 90px;
             height: fit-content;
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.2);
+            animation: scaleIn var(--duration-slow) var(--ease-bounce);
         }
 
         .service-cta-title {
@@ -1111,17 +1538,34 @@
             color: var(--primary-500);
         }
 
-        .form-input,
+        .form-input {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            transition: all var(--duration-normal) var(--ease-out);
+        }
+
+        .form-input:focus {
+            background: rgba(255, 255, 255, 0.95);
+            border-color: var(--primary-500);
+            box-shadow: 0 0 0 3px rgba(165, 59, 43, 0.1), 0 4px 12px rgba(0, 0, 0, 0.05);
+            transform: translateY(-1px);
+        }
+
+        /* Legacy form-input styles */
         .form-textarea,
         .form-select {
             width: 100%;
             padding: var(--spacing-md) var(--spacing-lg);
-            border: 1px solid var(--neutral-200);
+            border: 1px solid rgba(255, 255, 255, 0.3);
             border-radius: var(--radius-md);
             font-size: 15px;
             font-family: inherit;
-            transition: all 0.2s;
-            background: var(--white);
+            transition: all var(--duration-normal) var(--ease-out);
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
         }
 
         .form-input:focus,
@@ -1129,7 +1573,9 @@
         .form-select:focus {
             outline: none;
             border-color: var(--primary-500);
-            box-shadow: 0 0 0 3px rgba(165, 59, 43, 0.1);
+            box-shadow: 0 0 0 3px rgba(165, 59, 43, 0.1), 0 4px 12px rgba(0, 0, 0, 0.05);
+            background: rgba(255, 255, 255, 0.95);
+            transform: translateY(-1px);
         }
 
         .form-textarea {
@@ -1559,11 +2005,20 @@
         }
 
         .settings-card {
-            background: var(--white);
-            border: 1px solid var(--neutral-200);
-            border-radius: var(--radius-lg);
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(16px) saturate(180%);
+            -webkit-backdrop-filter: blur(16px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.25);
+            border-radius: var(--radius-xl);
             padding: var(--spacing-2xl);
             margin-bottom: var(--spacing-xl);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+            transition: all var(--duration-normal) var(--ease-out);
+        }
+
+        .settings-card:hover {
+            background: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 12px 40px 0 rgba(31, 38, 135, 0.2);
         }
 
         .settings-section {
@@ -1977,11 +2432,36 @@
             }
         }
 
+        /* Comprehensive Mobile Responsive Styles */
         @media (max-width: 768px) {
+            /* Base Mobile Adjustments */
+            body {
+                font-size: 15px;
+            }
+
+            /* Navigation */
             .nav-container {
                 flex-wrap: wrap;
                 height: auto;
                 padding: var(--spacing-md);
+                gap: var(--spacing-sm);
+            }
+
+            .logo-section {
+                flex: 1;
+                min-width: 0;
+            }
+
+            .logo {
+                font-size: 22px;
+            }
+
+            .logo img {
+                height: 32px;
+            }
+
+            .location-badge {
+                display: none; /* Hide on mobile to save space */
             }
 
             .nav-search {
@@ -1991,31 +2471,113 @@
                 margin: var(--spacing-md) 0 0 0;
             }
 
+            .nav-right {
+                gap: var(--spacing-sm);
+            }
+
+            .nav-link {
+                font-size: 14px;
+                padding: var(--spacing-xs) var(--spacing-sm);
+            }
+
+            .premium-badge {
+                font-size: 10px;
+                padding: var(--spacing-xs) var(--spacing-sm);
+            }
+
+            .user-avatar {
+                width: 28px;
+                height: 28px;
+            }
+
+            /* Hero Section */
+            .hero-section {
+                padding: var(--spacing-2xl) var(--spacing-md);
+            }
+
             .hero-title {
                 font-size: 28px;
+                line-height: 1.3;
             }
 
             .hero-subtitle {
                 font-size: 18px;
             }
 
+            .hero-search-wrapper {
+                flex-direction: column;
+                border-radius: var(--radius-lg);
+            }
+
             .hero-search-input {
-                font-size: 16px;
+                font-size: 16px; /* Prevents zoom on iOS */
                 padding: var(--spacing-md) var(--spacing-lg);
+                border-radius: var(--radius-lg) var(--radius-lg) 0 0;
             }
 
+            .hero-search-btn {
+                width: 100%;
+                padding: var(--spacing-md);
+                border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+            }
+
+            /* Main Container */
+            .main-container {
+                padding: var(--spacing-xl) var(--spacing-md);
+            }
+
+            /* Category Grid */
             .category-grid {
-                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-                gap: var(--spacing-lg);
+                grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+                gap: var(--spacing-md);
             }
 
+            .category-card {
+                padding: var(--spacing-lg);
+            }
+
+            .category-icon-wrapper {
+                width: 56px;
+                height: 56px;
+            }
+
+            .category-label {
+                font-size: 18px;
+            }
+
+            /* Tasks Grid */
             .tasks-grid {
                 grid-template-columns: 1fr;
+                gap: var(--spacing-md);
             }
 
+            .task-card {
+                border-radius: var(--radius-lg);
+            }
+
+            .task-card-body {
+                padding: var(--spacing-lg);
+            }
+
+            .task-card-title {
+                font-size: 18px;
+            }
+
+            .task-card-footer {
+                flex-direction: column;
+                gap: var(--spacing-sm);
+            }
+
+            .task-card-footer .btn,
+            .task-card-footer .btn-text {
+                width: 100%;
+            }
+
+            /* Premium Banner */
             .premium-banner {
                 flex-direction: column;
                 text-align: center;
+                padding: var(--spacing-xl) var(--spacing-lg);
             }
 
             .banner-image {
@@ -2023,8 +2585,18 @@
                 height: 100px;
             }
 
+            .banner-title {
+                font-size: 28px;
+            }
+
+            .banner-subtitle {
+                font-size: 16px;
+            }
+
+            /* Service Details */
             .service-detail-content {
                 grid-template-columns: 1fr;
+                gap: var(--spacing-xl);
             }
 
             .service-header-content {
@@ -2032,10 +2604,32 @@
                 text-align: center;
             }
 
+            .service-cta-card {
+                position: relative;
+                top: 0;
+            }
+
+            /* Forms */
             .survey-form {
                 padding: var(--spacing-lg);
             }
 
+            .form-group {
+                margin-bottom: var(--spacing-lg);
+            }
+
+            .form-label {
+                font-size: 15px;
+            }
+
+            .form-input,
+            .form-textarea,
+            .form-select {
+                font-size: 16px; /* Prevents zoom on iOS */
+                padding: var(--spacing-md);
+            }
+
+            /* Invoice Card */
             .invoice-card {
                 padding: var(--spacing-lg);
             }
@@ -3439,7 +4033,7 @@
                         callback: function(response) {
                             // Payment successful
                             resolve({
-                                success: true,
+                            success: true,
                                 reference: response.reference,
                                 transactionId: response.reference,
                                 status: 'success'
@@ -3463,8 +4057,8 @@
             async verifyPayment(reference) {
                 // This would typically be done on your backend
                 // For now, we'll trust the callback response
-                return {
-                    success: true,
+                        return {
+                            success: true,
                     reference: reference,
                     status: 'success'
                 };
@@ -3939,7 +4533,10 @@
         <nav class="landing-nav">
             <div class="landing-nav-container">
                 <div class="landing-logo">
-                    <img src="images/logo.png" alt="HomeFix Logo" width=50 height=50>
+                    <video class="logo-video" autoplay loop muted playsinline preload="auto" style="height: 50px; width: auto;" aria-hidden="true">
+                        <source src="images/vidanimation.mp4" type="video/mp4">
+                        <img src="images/logo.png" alt="HomeFix Logo" width=50 height=50 style="display: none;">
+                    </video>
                     <span>HomeFix</span>
                 </div>
                 <div class="landing-nav-right">
@@ -4415,7 +5012,10 @@
         <div class="nav-container">
             <div class="logo-section" onclick="showScreen('home')">
                 <div class="logo">
-                    <img src="images/logo.png" alt="HomeFix Logo">
+                    <video class="logo-video" autoplay loop muted playsinline preload="auto" aria-hidden="true">
+                        <source src="images/vidanimation.mp4" type="video/mp4">
+                        <img src="images/logo.png" alt="HomeFix Logo" style="display: none;">
+                    </video>
                     <span>HomeFix</span>
                 </div>
                 <div class="location-badge">
@@ -5061,10 +5661,10 @@
                         <p style="margin-top: var(--spacing-md); color: var(--neutral-600); font-size: 14px;">
                             Your payment information is securely processed by Paystack. We never store your card details.
                         </p>
-                    </div>
-                    <div class="settings-actions">
+                        </div>
+                        <div class="settings-actions">
                         <button type="button" class="btn btn-ghost" onclick="hideAddPaymentMethod()">Close</button>
-                    </div>
+                        </div>
                 </div>
             </div>
         </div>
@@ -5981,7 +6581,7 @@
                                 <div>
                                     <div style="font-size: 12px; color: ${request.invoice.status === 'paid' || request.invoice.paymentStatus === 'paid' ? '#166534' : '#92400E'}; font-weight: 600; text-transform: uppercase; margin-bottom: var(--spacing-xs);">
                                         ${request.invoice.status === 'paid' || request.invoice.paymentStatus === 'paid' ? '✅ Invoice Paid' : '💰 Invoice Pending Payment'}
-                                    </div>
+                                </div>
                                     <div style="font-size: 20px; color: ${request.invoice.status === 'paid' || request.invoice.paymentStatus === 'paid' ? '#166534' : '#92400E'}; font-weight: 800;">₵${request.invoice.total.toFixed(2)}</div>
                                     <div style="font-size: 12px; color: ${request.invoice.status === 'paid' || request.invoice.paymentStatus === 'paid' ? '#166534' : '#92400E'}; margin-top: var(--spacing-xs);">
                                         Invoice ID: ${request.invoice.id || 'N/A'}
@@ -5993,16 +6593,16 @@
                         </div>
                         ` : ''}
                     </div>
-                    <div class="task-card-footer" style="display: flex; gap: var(--spacing-sm);">
+                    <div class="task-card-footer" style="display: flex; gap: var(--spacing-sm); flex-wrap: wrap;">
                         ${request.invoice && request.invoice.status !== 'paid' && request.invoice.paymentStatus !== 'paid' ? `
-                        <button class="btn btn-primary" onclick="payInvoiceFromTask('${request.id}')" style="flex: 1; font-weight: 600;">
+                        <button class="btn btn-primary" onclick="payInvoiceFromTask('${request.id}')" style="flex: 1; min-width: 200px; font-weight: 600;">
                             💳 Pay ₵${request.invoice.total.toFixed(2)}
                         </button>
-                        <button class="btn-text" onclick="viewUserRequest('${request.id}')" style="flex: 1; text-align: center;">
+                        <button class="btn-text" onclick="viewUserRequest('${request.id}')" style="flex: 1; min-width: 150px; text-align: center;">
                             📄 View Invoice
                         </button>
                         ` : `
-                        <button class="btn-text" onclick="viewUserRequest('${request.id}')" style="flex: 1; text-align: center;">
+                        <button class="btn-text" onclick="viewUserRequest('${request.id}')" style="flex: 1; min-width: 200px; text-align: center;">
                             ${request.invoice ? '📄 View Invoice & Details' : '👁️ View Details'}
                         </button>
                         `}
@@ -6080,7 +6680,7 @@
                 // Initialize Paystack payment
                 const paymentResult = await paystackAPI.initializePayment(
                     userEmail,
-                    amount,
+                amount,
                     invoice.id,
                     {
                         request_id: request.id,
@@ -6092,30 +6692,30 @@
                 if (paymentResult.success) {
                     // Payment successful - update invoice
                     const requestResult = await firebaseRequests.getRequest(request.id);
-                    if (requestResult.success && requestResult.data) {
-                        const updatedInvoice = {
-                            ...request.invoice,
-                            status: 'paid',
-                            paymentStatus: 'paid',
-                            paidAt: new Date().toISOString(),
+                        if (requestResult.success && requestResult.data) {
+                            const updatedInvoice = {
+                                ...request.invoice,
+                                status: 'paid',
+                                paymentStatus: 'paid',
+                                paidAt: new Date().toISOString(),
                             transactionId: paymentResult.reference,
                             paymentMethod: 'Paystack'
-                        };
-                        
+                            };
+                            
                         await firebaseRequests.updateRequest(request.id, {
-                            invoice: updatedInvoice
-                        });
-                        
-                        alert(`✅ Payment Successful!\n\n` +
+                                invoice: updatedInvoice
+                            });
+                            
+                            alert(`✅ Payment Successful!\n\n` +
                             `Invoice ID: ${invoice.id}\n` +
                             `Amount Paid: ₵${amount.toFixed(2)}\n` +
                             `Transaction Reference: ${paymentResult.reference}\n\n` +
-                            `Thank you for your payment!`);
-                        
-                        // Refresh tasks
-                        renderTasks();
+                                `Thank you for your payment!`);
+                            
+                            // Refresh tasks
+                            renderTasks();
+                        }
                     }
-                }
             } catch (error) {
                 if (error.cancelled) {
                     // User cancelled - no need to show error
@@ -6124,7 +6724,7 @@
                 
                 console.error('Paystack payment error:', error);
                 alert(`Payment failed: ${error.error || error.message || 'An error occurred'}\n\nPlease try again or contact support.`);
-            }
+                }
         }
 
         // View User Request (new function for actual user requests)
@@ -8170,7 +8770,12 @@
                 </a>
             </div>
             <div class="auth-header">
-                <div class="auth-logo">HomeFix</div>
+                <div class="auth-logo" style="display: flex; align-items: center; gap: var(--spacing-sm); justify-content: center;">
+                    <video class="logo-video" autoplay loop muted playsinline preload="auto" style="height: 36px; width: auto;" aria-hidden="true">
+                        <source src="images/vidanimation.mp4" type="video/mp4">
+                    </video>
+                    <span>HomeFix</span>
+                </div>
                 <h1 class="auth-title">Agent Login</h1>
                 <p class="auth-subtitle">Access your agent dashboard</p>
             </div>
@@ -8237,6 +8842,138 @@
             </div>
         </div>
     </div>
+
+    <!-- Cookie Consent Banner -->
+    <div id="cookie-consent-banner" class="cookie-consent-banner" style="display: none;">
+        <div class="cookie-consent-content">
+            <div class="cookie-consent-icon">🍪</div>
+            <div class="cookie-consent-text">
+                <h3 class="cookie-consent-title">We Value Your Privacy</h3>
+                <p class="cookie-consent-description">
+                    We use cookies to enhance your browsing experience, analyze site traffic, and personalize content. 
+                    By clicking "Accept All", you consent to our use of cookies. 
+                    <a href="#" onclick="showCookieSettings(); return false;" class="cookie-link">Learn more</a>
+                </p>
+            </div>
+            <div class="cookie-consent-actions">
+                <button class="btn btn-ghost cookie-btn" onclick="acceptCookies('essential')">Essential Only</button>
+                <button class="btn btn-primary cookie-btn" onclick="acceptCookies('all')">Accept All</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Cookie Consent Management
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+            return null;
+        }
+
+        function setCookie(name, value, days) {
+            const date = new Date();
+            date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+            const expires = `expires=${date.toUTCString()}`;
+            document.cookie = `${name}=${value};${expires};path=/;SameSite=Lax`;
+        }
+
+        function checkCookieConsent() {
+            const consent = getCookie('cookie_consent');
+            if (!consent) {
+                // Show banner after a short delay for better UX
+                setTimeout(() => {
+                    const banner = document.getElementById('cookie-consent-banner');
+                    if (banner) {
+                        banner.style.display = 'flex';
+                        banner.classList.add('cookie-consent-show');
+                    }
+                }, 1000);
+            }
+        }
+
+        function acceptCookies(type) {
+            const banner = document.getElementById('cookie-consent-banner');
+            
+            if (type === 'all') {
+                setCookie('cookie_consent', 'all', 365);
+                setCookie('analytics_cookies', 'enabled', 365);
+                setCookie('marketing_cookies', 'enabled', 365);
+            } else {
+                setCookie('cookie_consent', 'essential', 365);
+                setCookie('analytics_cookies', 'disabled', 365);
+                setCookie('marketing_cookies', 'disabled', 365);
+            }
+            
+            // Animate out
+            if (banner) {
+                banner.classList.remove('cookie-consent-show');
+                banner.classList.add('cookie-consent-hide');
+                setTimeout(() => {
+                    banner.style.display = 'none';
+                }, 300);
+            }
+        }
+
+        function showCookieSettings() {
+            alert('Cookie Settings:\n\n' +
+                  'Essential Cookies: Required for the website to function properly.\n' +
+                  'Analytics Cookies: Help us understand how visitors interact with our website.\n' +
+                  'Marketing Cookies: Used to deliver personalized advertisements.\n\n' +
+                  'You can change your preferences at any time by clearing your browser cookies.');
+        }
+
+        // Check cookie consent on page load
+        window.addEventListener('load', checkCookieConsent);
+
+        // Ensure logo videos autoplay and loop seamlessly
+        function initializeLogoVideos() {
+            const logoVideos = document.querySelectorAll('.logo-video');
+            logoVideos.forEach(video => {
+                // Ensure all required attributes
+                video.muted = true;
+                video.playsInline = true;
+                video.loop = true;
+                video.autoplay = true;
+                video.setAttribute('muted', '');
+                video.setAttribute('playsinline', '');
+                video.setAttribute('loop', '');
+                video.setAttribute('autoplay', '');
+                
+                // Remove any controls
+                video.controls = false;
+                video.removeAttribute('controls');
+                
+                // Try to play
+                const playPromise = video.play();
+                if (playPromise !== undefined) {
+                    playPromise.catch(error => {
+                        // Auto-play was prevented, but video will play on first user interaction
+                        console.log('Video autoplay prevented, will play on interaction');
+                    });
+                }
+
+                // Ensure seamless looping
+                video.addEventListener('ended', () => {
+                    video.currentTime = 0;
+                    video.play().catch(() => {});
+                });
+
+                // Prevent context menu on right-click
+                video.addEventListener('contextmenu', (e) => {
+                    e.preventDefault();
+                });
+            });
+        }
+
+        // Initialize videos when page loads
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initializeLogoVideos);
+        } else {
+            initializeLogoVideos();
+        }
+        window.addEventListener('load', initializeLogoVideos);
+    </script>
 </body>
 </html>
 
