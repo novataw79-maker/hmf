@@ -3232,7 +3232,9 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-functions-compat.js"></script>
+    
+    <!-- Paystack Inline JS -->
+    <script src="https://js.paystack.co/v1/inline.js"></script>
     <script>
         // ============================================
         // Firebase Configuration
@@ -3406,57 +3408,66 @@
             }
         };
         
-        // MTN Mobile Money API Service using Firebase Cloud Functions
-        const mtnMoMoAPI = {
-            // Request payment from customer using Firebase Cloud Function
-            async requestPayment(phoneNumber, amount, externalId, invoiceId) {
-                try {
-                    // Call Firebase Cloud Function
-                    const requestPayment = firebase.functions().httpsCallable('requestMTNPayment');
-                    const result = await requestPayment({
-                        phoneNumber: phoneNumber.replace(/\D/g, ''), // Remove non-digits
-                        amount: amount.toString(),
-                        currency: 'GHS',
-                        externalId: externalId,
-                        invoiceId: invoiceId
+        // Paystack Payment Configuration
+        const PAYSTACK_PUBLIC_KEY = 'EQCLfvbkTrdUJ1wfyNI9uOdcK30z1wbWWX060mrXBNwp2Tse'; // Your Paystack Public Key
+        
+        // Paystack Payment Service
+        const paystackAPI = {
+            // Initialize Paystack payment
+            async initializePayment(email, amount, invoiceId, metadata = {}) {
+                return new Promise((resolve, reject) => {
+                    const handler = PaystackPop.setup({
+                        key: PAYSTACK_PUBLIC_KEY,
+                        email: email,
+                        amount: Math.round(amount * 100), // Convert to kobo/pesewas (smallest currency unit)
+                        currency: 'GHS', // Ghana Cedis
+                        ref: `INV-${invoiceId}-${Date.now()}`, // Unique reference
+                        metadata: {
+                            custom_fields: [
+                                {
+                                    display_name: "Invoice ID",
+                                    variable_name: "invoice_id",
+                                    value: invoiceId
+                                },
+                                ...Object.entries(metadata).map(([key, value]) => ({
+                                    display_name: key,
+                                    variable_name: key,
+                                    value: value
+                                }))
+                            ]
+                        },
+                        callback: function(response) {
+                            // Payment successful
+                            resolve({
+                                success: true,
+                                reference: response.reference,
+                                transactionId: response.reference,
+                                status: 'success'
+                            });
+                        },
+                        onClose: function() {
+                            // User closed the payment modal
+                            reject({
+                                success: false,
+                                error: 'Payment cancelled by user',
+                                cancelled: true
+                            });
+                        }
                     });
                     
-                    if (result.data.success) {
-                        return {
-                            success: true,
-                            transactionId: result.data.transactionId,
-                            status: result.data.status
-                        };
-                    } else {
-                        return { success: false, error: result.data.error || 'Payment request failed' };
-                    }
-                } catch (error) {
-                    console.error('Error requesting MTN MoMo payment:', error);
-                    return { success: false, error: error.message || 'Failed to process payment request' };
-                }
+                    handler.openIframe();
+                });
             },
             
-            // Check payment status using Firebase Cloud Function
-            async checkPaymentStatus(transactionId) {
-                try {
-                    // Call Firebase Cloud Function
-                    const checkStatus = firebase.functions().httpsCallable('checkMTNPaymentStatus');
-                    const result = await checkStatus({ transactionId: transactionId });
-                    
-                    if (result.data.success) {
-                        return {
-                            success: true,
-                            status: result.data.status,
-                            amount: result.data.amount,
-                            currency: result.data.currency
-                        };
-                    } else {
-                        return { success: false, error: result.data.error || 'Failed to check payment status' };
-                    }
-                } catch (error) {
-                    console.error('Error checking payment status:', error);
-                    return { success: false, error: error.message || 'Failed to check payment status' };
-                }
+            // Verify payment (optional - for server-side verification)
+            async verifyPayment(reference) {
+                // This would typically be done on your backend
+                // For now, we'll trust the callback response
+                return {
+                    success: true,
+                    reference: reference,
+                    status: 'success'
+                };
             }
         };
         
@@ -5012,44 +5023,48 @@
 
             <div class="settings-card">
                 <div class="settings-section">
-                    <h2 class="settings-section-title">Saved Payment Methods</h2>
-                    <div class="payment-methods-list" id="payment-methods-list">
-                        <!-- Payment methods will be populated here -->
+                    <h2 class="settings-section-title">Payment Methods</h2>
+                    <div style="padding: var(--spacing-lg); background: var(--neutral-50); border-radius: var(--radius-lg);">
+                        <p style="margin-bottom: var(--spacing-md); color: var(--neutral-700);">
+                            <strong>💳 Paystack Payment Gateway</strong>
+                        </p>
+                        <p style="color: var(--neutral-600); font-size: 14px; line-height: 1.6; margin-bottom: var(--spacing-md);">
+                            We use Paystack for secure payment processing. When you make a payment, you'll be redirected to Paystack's secure payment page where you can choose from:
+                        </p>
+                        <ul style="margin: var(--spacing-md) 0; padding-left: var(--spacing-lg); color: var(--neutral-600); font-size: 14px; line-height: 1.8;">
+                            <li>💳 Debit/Credit Cards (Visa, Mastercard, Verve)</li>
+                            <li>📱 Mobile Money (MTN, Vodafone, AirtelTigo)</li>
+                            <li>🏦 Bank Transfer</li>
+                            <li>📞 USSD</li>
+                        </ul>
+                        <p style="margin-top: var(--spacing-md); color: var(--neutral-600); font-size: 14px;">
+                            <strong>🔒 Security:</strong> Your payment information is securely processed by Paystack. We never store your card or account details.
+                        </p>
                     </div>
-                    <button class="btn btn-primary" onclick="showAddPaymentMethod()">Add Payment Method</button>
                 </div>
 
                 <div class="settings-section" id="add-payment-section" style="display: none;">
-                    <h2 class="settings-section-title">Add Mobile Money Account</h2>
-                    <form onsubmit="addPaymentMethod(event)">
-                        <div class="form-group-settings">
-                            <label class="form-label-settings">Mobile Money Provider <span class="required">*</span></label>
-                            <select class="form-input" id="mobile-money-provider" required>
-                                <option value="">Select provider</option>
-                                <option value="mtn">MTN Mobile Money</option>
-                                <option value="telecel">Telecel Cash</option>
-                                <option value="airtel-tigo">AirtelTigo Money</option>
-                            </select>
-                        </div>
-                        <div class="form-group-settings">
-                            <label class="form-label-settings">Phone Number <span class="required">*</span></label>
-                            <input type="tel" class="form-input" id="mobile-money-number" placeholder="0244 123 456" required>
-                        </div>
-                        <div class="form-group-settings">
-                            <label class="form-label-settings">Account Name <span class="required">*</span></label>
-                            <input type="text" class="form-input" id="mobile-money-name" placeholder="Enter account holder name" required>
-                        </div>
-                        <div class="form-group-settings">
-                            <label class="form-checkbox">
-                                <input type="checkbox" id="set-default">
-                                <span>Set as default payment method</span>
-                            </label>
-                        </div>
-                        <div class="settings-actions">
-                            <button type="button" class="btn btn-ghost" onclick="hideAddPaymentMethod()">Cancel</button>
-                            <button type="submit" class="btn btn-primary">Add Mobile Money</button>
-                        </div>
-                    </form>
+                    <h2 class="settings-section-title">Payment Information</h2>
+                    <div style="padding: var(--spacing-lg); background: var(--neutral-50); border-radius: var(--radius-lg); margin-bottom: var(--spacing-lg);">
+                        <p style="margin-bottom: var(--spacing-md); color: var(--neutral-700);">
+                            <strong>💳 Paystack Payment Gateway</strong>
+                        </p>
+                        <p style="color: var(--neutral-600); font-size: 14px; line-height: 1.6;">
+                            We use Paystack for secure payments. You can pay using:
+                        </p>
+                        <ul style="margin: var(--spacing-md) 0; padding-left: var(--spacing-lg); color: var(--neutral-600); font-size: 14px;">
+                            <li>Debit/Credit Cards (Visa, Mastercard, Verve)</li>
+                            <li>Mobile Money (MTN, Vodafone, AirtelTigo)</li>
+                            <li>Bank Transfer</li>
+                            <li>USSD</li>
+                        </ul>
+                        <p style="margin-top: var(--spacing-md); color: var(--neutral-600); font-size: 14px;">
+                            Your payment information is securely processed by Paystack. We never store your card details.
+                        </p>
+                    </div>
+                    <div class="settings-actions">
+                        <button type="button" class="btn btn-ghost" onclick="hideAddPaymentMethod()">Close</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -5225,7 +5240,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                         </svg>
                     </div>
-                    <div class="faq-answer">We accept mobile money payments through MTN Mobile Money, Telecel Cash, and AirtelTigo Money. You can add and manage your mobile money accounts in your account settings.</div>
+                    <div class="faq-answer">We accept payments through Paystack, which supports multiple payment methods including debit/credit cards, mobile money (MTN, Vodafone, AirtelTigo), bank transfers, and USSD. All payments are processed securely through Paystack's payment gateway.</div>
                 </div>
                 <div class="faq-item" onclick="toggleFAQ(this)">
                     <div class="faq-question">
@@ -5301,7 +5316,7 @@
                 label: 'Gardening', 
                 description: 'Landscaping and garden maintenance services',
                 icon: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253',
-                image: 'images/gardener-garden-with-hut-cuts-tree-with-hedgehogs-against-sky.png'
+                image: 'images/gardener-garden-with-hut-cuts-tree-with-hedgehogs-against-sky.jpg'
             },
         ];
 
@@ -5568,7 +5583,7 @@
                 price: 'Starting at $40',
                 icon: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253',
                 image: 'images/gardener-garden-with-hut-cuts-tree-with-hedgehogs-against-sky.png',
-                backgroundImage: 'images/gardener-garden-with-hut-cuts-tree-with-hedgehogs-against-sky.jpg'
+                backgroundImage: 'images/gardener-garden-with-hut-cuts-tree-with-hedgehogs-against-sky.png'
             }
         };
 
@@ -5961,149 +5976,155 @@
                         </div>
                         ` : ''}
                         ${request.invoice ? `
-                        <div style="padding: var(--spacing-md); background: linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%); border: 2px solid #86EFAC; border-radius: var(--radius-md); margin-top: var(--spacing-md);">
+                        <div style="padding: var(--spacing-md); background: ${request.invoice.status === 'paid' || request.invoice.paymentStatus === 'paid' ? 'linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%)' : 'linear-gradient(135deg, #FEF3C7 0%, #FDE68A 100%)'}; border: 2px solid ${request.invoice.status === 'paid' || request.invoice.paymentStatus === 'paid' ? '#86EFAC' : '#FCD34D'}; border-radius: var(--radius-md); margin-top: var(--spacing-md);">
                             <div style="display: flex; justify-content: space-between; align-items: center;">
                                 <div>
-                                    <div style="font-size: 12px; color: #166534; font-weight: 600; text-transform: uppercase; margin-bottom: var(--spacing-xs);">Invoice Available</div>
-                                    <div style="font-size: 20px; color: #166534; font-weight: 800;">₵${request.invoice.total.toFixed(2)}</div>
-                                    <div style="font-size: 12px; color: #166534; margin-top: var(--spacing-xs);">Invoice ID: ${request.invoice.id || 'N/A'}</div>
+                                    <div style="font-size: 12px; color: ${request.invoice.status === 'paid' || request.invoice.paymentStatus === 'paid' ? '#166534' : '#92400E'}; font-weight: 600; text-transform: uppercase; margin-bottom: var(--spacing-xs);">
+                                        ${request.invoice.status === 'paid' || request.invoice.paymentStatus === 'paid' ? '✅ Invoice Paid' : '💰 Invoice Pending Payment'}
+                                    </div>
+                                    <div style="font-size: 20px; color: ${request.invoice.status === 'paid' || request.invoice.paymentStatus === 'paid' ? '#166534' : '#92400E'}; font-weight: 800;">₵${request.invoice.total.toFixed(2)}</div>
+                                    <div style="font-size: 12px; color: ${request.invoice.status === 'paid' || request.invoice.paymentStatus === 'paid' ? '#166534' : '#92400E'}; margin-top: var(--spacing-xs);">
+                                        Invoice ID: ${request.invoice.id || 'N/A'}
+                                        ${request.invoice.status === 'paid' || request.invoice.paymentStatus === 'paid' ? ` • Paid via ${request.invoice.paymentMethod || 'Paystack'}` : ''}
+                                    </div>
                                 </div>
-                                <div style="font-size: 32px;">💰</div>
+                                <div style="font-size: 32px;">${request.invoice.status === 'paid' || request.invoice.paymentStatus === 'paid' ? '✅' : '💰'}</div>
                             </div>
                         </div>
                         ` : ''}
                     </div>
                     <div class="task-card-footer" style="display: flex; gap: var(--spacing-sm);">
+                        ${request.invoice && request.invoice.status !== 'paid' && request.invoice.paymentStatus !== 'paid' ? `
+                        <button class="btn btn-primary" onclick="payInvoiceFromTask('${request.id}')" style="flex: 1; font-weight: 600;">
+                            💳 Pay ₵${request.invoice.total.toFixed(2)}
+                        </button>
+                        <button class="btn-text" onclick="viewUserRequest('${request.id}')" style="flex: 1; text-align: center;">
+                            📄 View Invoice
+                        </button>
+                        ` : `
                         <button class="btn-text" onclick="viewUserRequest('${request.id}')" style="flex: 1; text-align: center;">
                             ${request.invoice ? '📄 View Invoice & Details' : '👁️ View Details'}
                         </button>
+                        `}
                     </div>
                 </div>
             `;
             }).join('');
         }
 
-        // Initiate MTN Mobile Money Payment
-        async function initiateMTNPayment(request) {
+        // Pay Invoice from Task Card (helper function)
+        async function payInvoiceFromTask(requestId) {
+            try {
+                // Fetch the full request data
+                const requestResult = await firebaseRequests.getRequest(requestId);
+                if (!requestResult.success || !requestResult.data) {
+                    alert('Error: Could not load invoice details. Please try again.');
+                    return;
+                }
+                
+                const request = requestResult.data;
+                
+                // Check if invoice exists
+                if (!request.invoice) {
+                    alert('No invoice found for this request.');
+                    return;
+                }
+                
+                // Check if already paid
+                if (request.invoice.status === 'paid' || request.invoice.paymentStatus === 'paid') {
+                    alert('This invoice has already been paid.');
+                    renderTasks(); // Refresh to show updated status
+                    return;
+                }
+                
+                // Initiate payment
+                await initiatePaystackPayment(request);
+            } catch (error) {
+                console.error('Error in payInvoiceFromTask:', error);
+                alert('An error occurred while processing your payment. Please try again.');
+            }
+        }
+
+        // Initiate Paystack Payment
+        async function initiatePaystackPayment(request) {
             const invoice = request.invoice;
             const amount = invoice.total;
             
-            // Get user's phone number
+            // Get user information
             const currentUser = firebaseAuth.getCurrentUser();
             if (!currentUser) {
                 alert('Please sign in to make a payment.');
                 return;
             }
             
-            // Get user data
-            const userData = await sessionDB.get('homefix_user') || {};
-            let phoneNumber = userData.phone || request.clientPhone;
-            
-            if (!phoneNumber) {
-                phoneNumber = prompt('Please enter your MTN Mobile Money phone number (e.g., 0244123456):');
-                if (!phoneNumber) {
-                    return;
-                }
-            }
-            
-            // Validate phone number format
-            const cleanPhone = phoneNumber.replace(/\D/g, '');
-            if (cleanPhone.length < 9 || !cleanPhone.startsWith('0')) {
-                alert('Please enter a valid Ghana phone number (e.g., 0244123456)');
+            // Get user email
+            const userEmail = currentUser.email;
+            if (!userEmail) {
+                alert('Please ensure your account has an email address to make payments.');
                 return;
             }
             
             // Confirm payment
-            const confirmMessage = `📱 MTN Mobile Money Payment\n\n` +
+            const confirmMessage = `💳 Paystack Payment\n\n` +
                 `Invoice ID: ${invoice.id}\n` +
                 `Amount: ₵${amount.toFixed(2)}\n` +
-                `Phone: ${phoneNumber}\n\n` +
-                `You will receive a prompt on your phone to approve this payment.\n\n` +
+                `Email: ${userEmail}\n\n` +
+                `You will be redirected to Paystack to complete your payment.\n\n` +
                 `Continue?`;
             
             if (!confirm(confirmMessage)) {
                 return;
             }
             
-            // Show loading
-            const loadingMessage = `Processing payment...\n\n` +
-                `Please check your phone and approve the payment when prompted.`;
-            alert(loadingMessage);
-            
-            // Generate external ID for tracking
-            const externalId = `INV-${invoice.id}-${Date.now()}`;
-            
-            // Request payment
-            const paymentResult = await mtnMoMoAPI.requestPayment(
-                phoneNumber,
-                amount,
-                externalId,
-                invoice.id
-            );
-            
-            if (!paymentResult.success) {
-                alert(`Payment failed: ${paymentResult.error}\n\nPlease try again or contact support.`);
-                return;
-            }
-            
-            // Store transaction ID
-            const transactionId = paymentResult.transactionId;
-            
-            // Start polling for payment status
-            pollPaymentStatus(request.id, transactionId, invoice.id);
-        }
-        
-        // Poll payment status
-        async function pollPaymentStatus(requestId, transactionId, invoiceId) {
-            let attempts = 0;
-            const maxAttempts = 30; // Poll for 5 minutes (10 seconds * 30)
-            
-            const pollInterval = setInterval(async () => {
-                attempts++;
+            try {
+                // Initialize Paystack payment
+                const paymentResult = await paystackAPI.initializePayment(
+                    userEmail,
+                    amount,
+                    invoice.id,
+                    {
+                        request_id: request.id,
+                        client_name: request.clientName || 'Customer',
+                        service_type: request.serviceType || 'Home Service'
+                    }
+                );
                 
-                const statusResult = await mtnMoMoAPI.checkPaymentStatus(transactionId);
-                
-                if (statusResult.success) {
-                    if (statusResult.status === 'SUCCESSFUL' || statusResult.status === 'COMPLETED') {
-                        clearInterval(pollInterval);
+                if (paymentResult.success) {
+                    // Payment successful - update invoice
+                    const requestResult = await firebaseRequests.getRequest(request.id);
+                    if (requestResult.success && requestResult.data) {
+                        const updatedInvoice = {
+                            ...request.invoice,
+                            status: 'paid',
+                            paymentStatus: 'paid',
+                            paidAt: new Date().toISOString(),
+                            transactionId: paymentResult.reference,
+                            paymentMethod: 'Paystack'
+                        };
                         
-                        // Update invoice status in Firestore
-                        const requestResult = await firebaseRequests.getRequest(requestId);
-                        if (requestResult.success && requestResult.data) {
-                            const request = requestResult.data;
-                            const updatedInvoice = {
-                                ...request.invoice,
-                                status: 'paid',
-                                paymentStatus: 'paid',
-                                paidAt: new Date().toISOString(),
-                                transactionId: transactionId,
-                                paymentMethod: 'MTN Mobile Money'
-                            };
-                            
-                            await firebaseRequests.updateRequest(requestId, {
-                                invoice: updatedInvoice
-                            });
-                            
-                            alert(`✅ Payment Successful!\n\n` +
-                                `Invoice ID: ${invoiceId}\n` +
-                                `Amount Paid: ₵${statusResult.amount || request.invoice.total}\n` +
-                                `Transaction ID: ${transactionId}\n\n` +
-                                `Thank you for your payment!`);
-                            
-                            // Refresh tasks
-                            renderTasks();
-                        }
-                    } else if (statusResult.status === 'FAILED' || statusResult.status === 'CANCELLED') {
-                        clearInterval(pollInterval);
-                        alert(`❌ Payment ${statusResult.status.toLowerCase()}\n\nPlease try again or contact support.`);
+                        await firebaseRequests.updateRequest(request.id, {
+                            invoice: updatedInvoice
+                        });
+                        
+                        alert(`✅ Payment Successful!\n\n` +
+                            `Invoice ID: ${invoice.id}\n` +
+                            `Amount Paid: ₵${amount.toFixed(2)}\n` +
+                            `Transaction Reference: ${paymentResult.reference}\n\n` +
+                            `Thank you for your payment!`);
+                        
+                        // Refresh tasks
+                        renderTasks();
                     }
                 }
-                
-                if (attempts >= maxAttempts) {
-                    clearInterval(pollInterval);
-                    alert('Payment status check timed out. Please check your payment history or contact support.');
+            } catch (error) {
+                if (error.cancelled) {
+                    // User cancelled - no need to show error
+                    return;
                 }
-            }, 10000); // Check every 10 seconds
+                
+                console.error('Paystack payment error:', error);
+                alert(`Payment failed: ${error.error || error.message || 'An error occurred'}\n\nPlease try again or contact support.`);
+            }
         }
 
         // View User Request (new function for actual user requests)
@@ -6235,7 +6256,7 @@
             if (!isPaid) {
                 const shouldPay = confirm(message + `\n\nWould you like to pay this invoice now?`);
                 if (shouldPay) {
-                    initiateMTNPayment(request);
+                    initiatePaystackPayment(request);
                 }
             } else {
                 alert(message);
@@ -6472,69 +6493,8 @@
 
         function addPaymentMethod(event) {
             event.preventDefault();
-            const provider = document.getElementById('mobile-money-provider').value;
-            const phoneNumber = document.getElementById('mobile-money-number').value.trim();
-            const accountName = document.getElementById('mobile-money-name').value.trim();
-            const isDefault = document.getElementById('set-default').checked;
-
-            // Validation
-            if (!provider) {
-                alert('Please select a mobile money provider');
-                return;
-            }
-            
-            if (!phoneNumber || phoneNumber.length < 9) {
-                alert('Please enter a valid phone number');
-                return;
-            }
-            
-            if (!accountName) {
-                alert('Please enter the account holder name');
-                return;
-            }
-
-            // Provider display names and icons
-            const providerInfo = {
-                'mtn': { name: 'MTN Mobile Money', icon: '📱', color: '#FFC107' },
-                'telecel': { name: 'Telecel Cash', icon: '📱', color: '#E91E63' },
-                'airtel-tigo': { name: 'AirtelTigo Money', icon: '📱', color: '#E60012' }
-            };
-            
-            const providerData = providerInfo[provider];
-            const maskedNumber = phoneNumber.replace(/(\d{3})\d+(\d{3})/, '$1***$2');
-
-            // Add to payment methods list (in real app, this would be sent to server)
-            const paymentMethodsList = document.getElementById('payment-methods-list');
-            const newMethod = document.createElement('div');
-            newMethod.className = 'payment-method-card';
-            newMethod.innerHTML = `
-                <div class="payment-method-info">
-                    <div class="payment-method-icon" style="background: ${providerData.color}20; color: ${providerData.color};">
-                        <span style="font-size: 24px;">${providerData.icon}</span>
-                    </div>
-                    <div class="payment-method-details">
-                        <div class="payment-method-name">${providerData.name}</div>
-                        <div class="payment-method-number">${maskedNumber} • ${accountName}</div>
-                    </div>
-                </div>
-                <div class="payment-method-actions">
-                    ${isDefault ? '<span class="payment-method-badge">Default</span>' : ''}
-                    <button class="btn btn-ghost" style="padding: var(--spacing-xs) var(--spacing-md);" onclick="alert(\'Edit mobile money account\')">Edit</button>
-                    <button class="btn btn-ghost" style="padding: var(--spacing-xs) var(--spacing-md);" onclick="this.closest(\'.payment-method-card\').remove()">Remove</button>
-                </div>
-            `;
-            
-            // If this is set as default, remove default badge from others
-            if (isDefault) {
-                paymentMethodsList.querySelectorAll('.payment-method-badge').forEach(badge => {
-                    badge.remove();
-                });
-            }
-            
-            paymentMethodsList.appendChild(newMethod);
-
-            console.log('Payment method added:', { provider, phoneNumber, accountName, isDefault });
-            alert('Mobile money account added successfully!');
+            // Payment methods are handled by Paystack during checkout
+            // No need to store payment methods locally
             hideAddPaymentMethod();
         }
 
