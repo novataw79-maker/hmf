@@ -3322,8 +3322,58 @@
         }
 
         .stats-section {
-            background: var(--primary-500);
+            position: relative;
             color: var(--white);
+            text-align: center;
+            padding: var(--spacing-3xl) var(--spacing-lg);
+            overflow: hidden;
+        }
+
+        .stats-slideshow {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        .stats-slide {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            transition: opacity 1s ease-in-out;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+
+        .stats-slide.active {
+            opacity: 1;
+        }
+
+        .stats-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, rgba(165, 59, 43, 0.85) 0%, rgba(220, 38, 38, 0.85) 100%);
+            z-index: 1;
+        }
+
+        .stats-section .landing-section-container {
+            position: relative;
+            z-index: 2;
+        }
+
+        .stats-section .stats-grid {
+            position: relative;
+            z-index: 2;
         }
 
         .stats-grid {
@@ -4924,6 +4974,41 @@
             // Listen to auth state changes
             onAuthStateChanged(callback) {
                 return auth.onAuthStateChanged(callback);
+            },
+
+            // Sign in with Google
+            async signInWithGoogle() {
+                try {
+                    const provider = new firebase.auth.GoogleAuthProvider();
+                    const result = await auth.signInWithPopup(provider);
+                    const user = result.user;
+                    
+                    // Check if user already exists in Firestore
+                    const userDoc = await db.collection('users').doc(user.uid).get();
+                    
+                    if (!userDoc.exists) {
+                        // New user - save to Firestore
+                        const name = user.displayName || user.email.split('@')[0];
+                        await db.collection('users').doc(user.uid).set({
+                            email: user.email,
+                            name: name,
+                            phone: user.phoneNumber || '',
+                            photoURL: user.photoURL || '',
+                            provider: 'google',
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                    } else {
+                        // Existing user - update last login
+                        await db.collection('users').doc(user.uid).update({
+                            lastLoginAt: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                    }
+                    
+                    return { success: true, user: user };
+                } catch (error) {
+                    console.error('Google sign-in error:', error);
+                    return { success: false, error: error.message };
+                }
             }
         };
         
@@ -5846,6 +5931,13 @@
 
         <!-- Stats Section -->
         <section class="landing-section stats-section" id="stats-section">
+            <div class="stats-slideshow">
+                <div class="stats-slide active" style="background-image: url('images/slide1.jpg');"></div>
+                <div class="stats-slide" style="background-image: url('images/slide2.jpg');"></div>
+                <div class="stats-slide" style="background-image: url('images/slide3.jpg');"></div>
+                <div class="stats-slide" style="background-image: url('images/slide4.jpg');"></div>
+                <div class="stats-slide" style="background-image: url('images/slide5.jpg');"></div>
+            </div>
             <div class="landing-section-container">
                 <div class="stats-grid">
                     <div class="stat-card">
@@ -6179,12 +6271,6 @@
                             <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
                         </svg>
                         Continue with Google
-                    </button>
-                    <button type="button" class="social-btn" onclick="handleSocialAuth('facebook')">
-                        <svg width="20" height="20" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
-                        </svg>
-                        Continue with Facebook
                     </button>
                 </div>
 
@@ -9372,9 +9458,80 @@
             }
         }
 
-        function handleSocialAuth(provider) {
-            // Placeholder for social authentication
-            alert(`${provider.charAt(0).toUpperCase() + provider.slice(1)} authentication will be implemented soon!`);
+        async function handleSocialAuth(provider) {
+            clearMessages();
+            
+            // Determine which page we're on
+            const isRegisterPage = document.getElementById('register-card').style.display !== 'none';
+            const successId = isRegisterPage ? 'register-success' : 'signin-success';
+            const errorId = isRegisterPage ? 'register-error' : 'signin-error';
+            
+            if (provider === 'google') {
+                try {
+                    showSuccess(successId, 'Signing in with Google...');
+                    
+                    const result = await firebaseAuth.signInWithGoogle();
+                    
+                    if (result.success && result.user) {
+                        const user = result.user;
+                        
+                        // Wait for auth state to be ready
+                        await firebaseAuth.waitForAuthState();
+                        
+                        // Get user data from Firestore
+                        await new Promise(resolve => setTimeout(resolve, 500));
+                        const userDataResult = await firebaseUsers.getUser(user.uid);
+                        
+                        // Store user session locally
+                        const userData = {
+                            uid: user.uid,
+                            name: userDataResult.success ? userDataResult.data.name : (user.displayName || user.email.split('@')[0]),
+                            email: userDataResult.success ? userDataResult.data.email : user.email,
+                            phone: userDataResult.success ? userDataResult.data.phone : '',
+                            photoURL: user.photoURL || ''
+                        };
+                        
+                        await sessionDB.set('homefix_authenticated', 'true');
+                        await sessionDB.set('homefix_user', userData);
+                        
+                        console.log('Google sign-in successful, user session stored:', userData);
+                        
+                        showSuccess(successId, 'Signed in successfully! Redirecting...');
+                        
+                        // Update UI
+                        const authContainer = document.getElementById('auth-container');
+                        const mainContent = document.getElementById('main-content');
+                        const landingPage = document.getElementById('landing-page');
+                        
+                        if (authContainer) authContainer.classList.add('hidden');
+                        if (landingPage) landingPage.classList.add('hidden');
+                        if (mainContent) {
+                            mainContent.classList.add('authenticated');
+                            mainContent.style.display = 'block';
+                        }
+                        
+                        // Initialize app
+                        setTimeout(async () => {
+                            await checkAuthStatus();
+                            init();
+                        }, 1000);
+                    } else {
+                        showError(errorId, result.error || 'Failed to sign in with Google');
+                    }
+                } catch (error) {
+                    console.error('Google sign-in error:', error);
+                    // Handle popup blocked error
+                    if (error.code === 'auth/popup-blocked') {
+                        showError(errorId, 'Popup was blocked. Please allow popups for this site and try again.');
+                    } else if (error.code === 'auth/popup-closed-by-user') {
+                        showError(errorId, 'Sign-in was cancelled.');
+                    } else {
+                        showError(errorId, error.message || 'Failed to sign in with Google');
+                    }
+                }
+            } else if (provider === 'facebook') {
+                alert('Facebook sign-in is coming soon!');
+            }
         }
 
         async function logout() {
@@ -10658,12 +10815,29 @@
             setInterval(showNextSlide, 4000);
         }
 
+        function initStatsSlideshow() {
+            const slides = document.querySelectorAll('.stats-slide');
+            if (slides.length === 0) return;
+            
+            let currentSlide = 0;
+            
+            function showNextSlide() {
+                slides[currentSlide].classList.remove('active');
+                currentSlide = (currentSlide + 1) % slides.length;
+                slides[currentSlide].classList.add('active');
+            }
+            
+            // Change slide every 4 seconds
+            setInterval(showNextSlide, 4000);
+        }
+
         // Initialize function
         async function initializePage() {
             // Initialize stats counter animation
             initStatsCounter();
             
-            // Also initialize CTA slideshow
+            // Initialize slideshows
+            initStatsSlideshow();
             initCTASlideshow();
             
             // Ensure database is initialized first
