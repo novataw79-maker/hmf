@@ -4168,18 +4168,37 @@
         .chat-wrapper {
             background: var(--white);
             border-radius: var(--radius-xl);
-            box-shadow: var(--shadow-lg);
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
             overflow: hidden;
             display: flex;
             flex-direction: column;
             height: 600px;
+            border: 1px solid var(--neutral-200);
         }
 
         .chat-messages {
             flex: 1;
             overflow-y: auto;
             padding: var(--spacing-xl);
-            background: var(--neutral-50);
+            background: linear-gradient(to bottom, #f8f9fa 0%, #ffffff 100%);
+            scroll-behavior: smooth;
+        }
+
+        .chat-messages::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .chat-messages::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb {
+            background: var(--neutral-300);
+            border-radius: 4px;
+        }
+
+        .chat-messages::-webkit-scrollbar-thumb:hover {
+            background: var(--neutral-400);
         }
 
         .chat-welcome {
@@ -4189,22 +4208,47 @@
             justify-content: center;
             height: 100%;
             text-align: center;
+            padding: var(--spacing-2xl);
         }
 
         .chat-welcome-icon {
-            font-size: 64px;
-            margin-bottom: var(--spacing-md);
+            font-size: 72px;
+            margin-bottom: var(--spacing-lg);
+            animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% {
+                transform: translateY(0px);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
         }
 
         .chat-welcome-text {
             font-size: 18px;
             color: var(--neutral-600);
+            font-weight: 500;
         }
 
         .chat-message {
             display: flex;
-            margin-bottom: var(--spacing-lg);
-            animation: fadeIn 0.3s;
+            margin-bottom: var(--spacing-md);
+            animation: fadeInUp 0.3s ease-out;
+            align-items: flex-end;
+            gap: var(--spacing-xs);
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .chat-message.user {
@@ -4218,12 +4262,15 @@
         .chat-message-bubble {
             max-width: 70%;
             padding: var(--spacing-md) var(--spacing-lg);
-            border-radius: var(--radius-lg);
+            border-radius: 18px;
             word-wrap: break-word;
+            position: relative;
+            line-height: 1.5;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
         }
 
         .chat-message.user .chat-message-bubble {
-            background: var(--primary-500);
+            background: linear-gradient(135deg, var(--primary-500) 0%, var(--primary-600) 100%);
             color: var(--white);
             border-bottom-right-radius: 4px;
         }
@@ -4233,13 +4280,21 @@
             color: var(--neutral-900);
             border: 1px solid var(--neutral-200);
             border-bottom-left-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
         }
 
         .chat-message-time {
-            font-size: 12px;
+            font-size: 11px;
             color: var(--neutral-500);
             margin-top: var(--spacing-xs);
             text-align: right;
+            opacity: 0.8;
+            font-weight: 500;
+        }
+
+        .chat-message.user .chat-message-time {
+            text-align: right;
+            color: rgba(255, 255, 255, 0.9);
         }
 
         .chat-message.agent .chat-message-time {
@@ -4252,39 +4307,50 @@
             padding: var(--spacing-lg);
             background: var(--white);
             border-top: 1px solid var(--neutral-200);
+            align-items: center;
         }
 
         .chat-input {
             flex: 1;
             padding: var(--spacing-md) var(--spacing-lg);
-            border: 1px solid var(--neutral-300);
-            border-radius: var(--radius-lg);
+            border: 2px solid var(--neutral-200);
+            border-radius: 24px;
             font-size: 15px;
             outline: none;
             transition: all 0.2s;
+            background: var(--neutral-50);
         }
 
         .chat-input:focus {
             border-color: var(--primary-500);
-            box-shadow: 0 0 0 3px rgba(165, 59, 43, 0.1);
+            background: var(--white);
+            box-shadow: 0 0 0 4px rgba(165, 59, 43, 0.1);
         }
 
         .chat-send-btn {
             padding: var(--spacing-md) var(--spacing-lg);
-            background: var(--primary-500);
+            background: linear-gradient(135deg, var(--primary-500) 0%, var(--primary-600) 100%);
             color: var(--white);
             border: none;
-            border-radius: var(--radius-lg);
+            border-radius: 50%;
+            width: 48px;
+            height: 48px;
             cursor: pointer;
             transition: all 0.2s;
             display: flex;
             align-items: center;
             justify-content: center;
+            box-shadow: 0 2px 8px rgba(165, 59, 43, 0.3);
         }
 
         .chat-send-btn:hover {
-            background: var(--primary-600);
-            transform: translateY(-1px);
+            background: linear-gradient(135deg, var(--primary-600) 0%, var(--primary-700) 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(165, 59, 43, 0.4);
+        }
+
+        .chat-send-btn:active {
+            transform: translateY(0);
         }
 
         /* Agent Chat Styles */
@@ -4299,12 +4365,31 @@
             border-radius: var(--radius-lg);
             padding: var(--spacing-lg);
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .chat-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 4px;
+            background: var(--primary-500);
+            transform: scaleY(0);
+            transition: transform 0.3s ease;
         }
 
         .chat-item:hover {
-            box-shadow: var(--shadow-md);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
             border-color: var(--primary-300);
+            transform: translateX(4px);
+        }
+
+        .chat-item:hover::before {
+            transform: scaleY(1);
         }
 
         .chat-item-header {
@@ -4317,11 +4402,13 @@
         .chat-item-user {
             font-weight: 600;
             color: var(--neutral-900);
+            font-size: 16px;
         }
 
         .chat-item-time {
             font-size: 12px;
             color: var(--neutral-500);
+            font-weight: 500;
         }
 
         .chat-item-preview {
@@ -4330,16 +4417,18 @@
             overflow: hidden;
             text-overflow: ellipsis;
             white-space: nowrap;
+            line-height: 1.5;
         }
 
         .chat-view {
             background: var(--white);
             border-radius: var(--radius-xl);
-            box-shadow: var(--shadow-lg);
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
             overflow: hidden;
             display: flex;
             flex-direction: column;
             height: 600px;
+            border: 1px solid var(--neutral-200);
         }
 
         .chat-view-header {
@@ -4348,6 +4437,7 @@
             display: flex;
             align-items: center;
             gap: var(--spacing-lg);
+            background: linear-gradient(to right, var(--primary-50), var(--white));
         }
 
         .chat-view-user-info {
@@ -4358,6 +4448,7 @@
             font-weight: 600;
             color: var(--neutral-900);
             font-size: 18px;
+            margin-bottom: var(--spacing-xs);
         }
 
         .chat-view-user-email {
@@ -4369,7 +4460,25 @@
             flex: 1;
             overflow-y: auto;
             padding: var(--spacing-xl);
-            background: var(--neutral-50);
+            background: linear-gradient(to bottom, #f8f9fa 0%, #ffffff 100%);
+            scroll-behavior: smooth;
+        }
+
+        .chat-view-messages::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .chat-view-messages::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .chat-view-messages::-webkit-scrollbar-thumb {
+            background: var(--neutral-300);
+            border-radius: 4px;
+        }
+
+        .chat-view-messages::-webkit-scrollbar-thumb:hover {
+            background: var(--neutral-400);
         }
 
         .chat-view-input {
@@ -4378,6 +4487,7 @@
             padding: var(--spacing-lg);
             background: var(--white);
             border-top: 1px solid var(--neutral-200);
+            align-items: center;
         }
 
         /* Notification Toast */
@@ -6421,11 +6531,6 @@
                         <div class="footer-disclaimer">
                             HomeFix is a professional home services platform connecting customers with verified service providers. 
                             All services are provided by independent contractors licensed in their respective fields.
-                        </div>
-                        <div class="footer-links">
-                            <a href="#" class="footer-link" onclick="showScreen('privacy-policy'); return false;">Privacy Policy</a>
-                            <span class="footer-link-separator">|</span>
-                            <a href="#" class="footer-link" onclick="showScreen('terms-conditions'); return false;">Terms and Conditions</a>
                         </div>
                     </div>
                     <div class="footer-right">
@@ -9916,8 +10021,9 @@
             const messagesContainer = document.getElementById('agent-chat-messages');
             if (!messagesContainer) return;
 
+            // In agent view, agent messages should appear on right (user style), user messages on left (agent style)
             const isAgent = msg.senderType === 'agent';
-            const messageClass = isAgent ? 'agent' : 'user';
+            const messageClass = isAgent ? 'user' : 'agent'; // Reversed for agent view
             
             const time = msg.createdAt && msg.createdAt.toDate ? 
                 msg.createdAt.toDate().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 
@@ -10303,7 +10409,8 @@
                     }
                 }
                 
-                // Show main content, hide everything else
+                // Show main content, hide everything else - but don't open any specific screen
+                // This prevents duplicate page opening on refresh
                 if (landingPage) {
                     landingPage.classList.add('hidden');
                 }
@@ -10313,6 +10420,13 @@
                 if (mainContent) {
                     mainContent.classList.add('authenticated');
                     mainContent.style.display = 'block'; // Force display
+                }
+                
+                // Only show home screen if no screen is currently active
+                const activeScreen = document.querySelector('.screen.active');
+                if (!activeScreen) {
+                    // No screen is active, show home screen
+                    showScreen('home');
                 }
                 
                 console.log('UI updated for authenticated user');
@@ -12113,6 +12227,10 @@
                 }
             }
             
+            // Track if this is the initial page load to prevent duplicate screen opening
+            let isInitialLoad = true;
+            let initialLoadComplete = false;
+            
             // Set up Firebase auth state listener
             firebaseAuth.onAuthStateChanged(async (user) => {
                 // Initialize notifications and chat when user logs in
@@ -12156,11 +12274,36 @@
                     }
                     // Only update UI if main content is not already authenticated
                     const mainContent = document.getElementById('main-content');
+                    const landingPage = document.getElementById('landing-page');
+                    
+                    // On initial load, only update if not already showing the correct screen
+                    if (isInitialLoad && !initialLoadComplete) {
+                        // Check if we're already on the correct screen
+                        const activeScreen = document.querySelector('.screen.active');
+                        if (mainContent && mainContent.classList.contains('authenticated') && 
+                            landingPage && landingPage.classList.contains('hidden') &&
+                            activeScreen) {
+                            // Already on correct screen, just mark as complete
+                            console.log('Auth state listener: Already on correct screen, skipping update');
+                            initialLoadComplete = true;
+                            isInitialLoad = false;
+                            return;
+                        }
+                    }
+                    
                     if (mainContent && !mainContent.classList.contains('authenticated')) {
                         console.log('Auth state listener: Updating UI');
                         await checkAuthStatus();
+                        if (isInitialLoad) {
+                            initialLoadComplete = true;
+                            isInitialLoad = false;
+                        }
                     } else {
                         console.log('Auth state listener: UI already authenticated, skipping update');
+                        if (isInitialLoad) {
+                            initialLoadComplete = true;
+                            isInitialLoad = false;
+                        }
                     }
                 } else {
                     // User is signed out - only update if not already on landing page
@@ -12177,6 +12320,10 @@
                         }
                         await checkAuthStatus();
                     }
+                    if (isInitialLoad) {
+                        initialLoadComplete = true;
+                        isInitialLoad = false;
+                    }
                 }
             });
             
@@ -12192,11 +12339,23 @@
             const agentDashboard = document.getElementById('agent-dashboard');
             const mainContent = document.getElementById('main-content');
             
-            // Ensure proper initial state
+            // Ensure proper initial state - but don't open any screens, just set visibility
             if (isAgentAuthenticated) {
                 await checkAgentAuth();
             } else if (currentUser) {
-                await checkAuthStatus();
+                // Only update UI visibility, don't open any specific screen
+                if (landingPage) {
+                    landingPage.classList.add('hidden');
+                }
+                if (authContainer) authContainer.classList.add('hidden');
+                if (agentContainer) agentContainer.classList.add('hidden');
+                if (agentDashboard) agentDashboard.classList.remove('active');
+                if (mainContent) {
+                    mainContent.classList.add('authenticated');
+                    mainContent.style.display = 'block';
+                }
+                // Don't call checkAuthStatus here as it might open a screen
+                // The auth state listener will handle it
                 await checkAgentAuth(); // Still call to ensure agent containers are hidden
             } else {
                 // Not authenticated - show landing page, hide everything else
