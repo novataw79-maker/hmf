@@ -5319,7 +5319,11 @@
         const HUBTEL_SENDER_NICKNAME = 'homefixgh'; // Your Hubtel Sender Nickname
         
         // Hubtel API Endpoints
-        const HUBTEL_SMS_API_URL = 'https://smsc.hubtel.com/v1/messages/send'; // SMS API (uses URL authentication)
+        // SMS API: https://smsc.hubtel.com/v1/messages/send
+        // Request Type: GET
+        // Authentication: URL parameters (clientid, clientsecret)
+        // No authorization header required
+        const HUBTEL_SMS_API_URL = 'https://smsc.hubtel.com/v1/messages/send';
         const HUBTEL_PAYMENT_API_BASE_URL = 'https://api.hubtel.com/v1/merchantaccount/merchants'; // Payment API (uses Basic Auth)
         
         // Helper function to create Hubtel Basic Auth header
@@ -5331,27 +5335,62 @@
         }
         
         // Hubtel SMS Service (uses URL authentication)
+        // API Endpoint: https://smsc.hubtel.com/v1/messages/send
+        // Request Type: GET
+        // Authentication: URL parameters (clientid, clientsecret)
+        // No authorization header required
         const hubtelSMS = {
             // Send SMS using Hubtel SMS API
             // Uses URL authentication: clientid and clientsecret as query parameters
             async sendSMS(phoneNumber, message) {
                 try {
-                    // Format phone number (remove leading +, ensure it starts with country code)
-                    let formattedPhone = phoneNumber.replace(/^\+/, ''); // Remove leading +
-                    if (!formattedPhone.startsWith('233')) {
-                        // If doesn't start with 233 (Ghana), add it
-                        formattedPhone = '233' + formattedPhone.replace(/^0/, ''); // Remove leading 0 if present
+                    // Format phone number to E164 format (full international format)
+                    // E164 format: +[country code][number] (e.g., +233594906859)
+                    let formattedPhone = phoneNumber.trim();
+                    
+                    // Remove any spaces, dashes, or other characters
+                    formattedPhone = formattedPhone.replace(/[\s\-\(\)]/g, '');
+                    
+                    // Ensure it starts with + and country code
+                    if (!formattedPhone.startsWith('+')) {
+                        if (formattedPhone.startsWith('233')) {
+                            formattedPhone = '+' + formattedPhone;
+                        } else if (formattedPhone.startsWith('0')) {
+                            // Remove leading 0 and add +233
+                            formattedPhone = '+233' + formattedPhone.substring(1);
+                        } else {
+                            // Assume it's a local number, add +233
+                            formattedPhone = '+233' + formattedPhone;
+                        }
                     }
                     
+                    // Validate sender ID (must be 11 alphanumeric characters or less)
+                    const senderId = HUBTEL_SENDER_NICKNAME.substring(0, 11); // Ensure max 11 chars
+                    
+                    // Truncate message if too long (recommended: less than 160 characters)
+                    const maxLength = 160;
+                    const truncatedMessage = message.length > maxLength ? message.substring(0, maxLength - 3) + '...' : message;
+                    
                     // Build URL with query parameters (URL authentication method)
+                    // Endpoint: https://smsc.hubtel.com/v1/messages/send
+                    // Request Type: GET
+                    // No authorization header required - authentication via URL parameters
                     const url = new URL(HUBTEL_SMS_API_URL);
                     url.searchParams.append('clientid', HUBTEL_CLIENT_ID);
                     url.searchParams.append('clientsecret', HUBTEL_CLIENT_SECRET);
-                    url.searchParams.append('from', HUBTEL_SENDER_NICKNAME);
+                    url.searchParams.append('from', senderId);
                     url.searchParams.append('to', formattedPhone);
-                    url.searchParams.append('content', message);
+                    url.searchParams.append('content', truncatedMessage);
                     
-                    // Make API call
+                    // Make API call using GET request
+                    // No authorization header required - authentication via URL parameters
+                    console.log('Sending SMS via Hubtel:', {
+                        to: formattedPhone,
+                        from: senderId,
+                        messageLength: truncatedMessage.length,
+                        url: url.toString().replace(/clientsecret=[^&]+/, 'clientsecret=***') // Hide secret in logs
+                    });
+                    
                     const response = await fetch(url.toString(), {
                         method: 'GET', // SMS API uses GET with query parameters
                         headers: {
@@ -5359,19 +5398,35 @@
                         }
                     });
                     
-                    const result = await response.json();
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        console.error('SMS API HTTP error:', response.status, errorText);
+                        throw new Error(`HTTP ${response.status}: ${errorText}`);
+                    }
                     
-                    if (result.responseCode === '0000' || result.status === 'Success') {
+                    const result = await response.json();
+                    console.log('SMS API response:', result);
+                    
+                    // Check for success (Hubtel typically returns responseCode: '0000' for success)
+                    if (result.responseCode === '0000' || result.ResponseCode === '0000' || result.status === 'Success') {
                         return {
                             success: true,
-                            messageId: result.messageId || result.data?.messageId,
-                            status: 'sent'
+                            messageId: result.messageId || result.MessageId || result.data?.messageId || result.Data?.MessageId,
+                            status: 'sent',
+                            response: result
                         };
                     } else {
-                        throw new Error(result.responseText || result.message || 'Failed to send SMS');
+                        const errorMsg = result.responseText || result.message || result.Message || result.ResponseText || 'Failed to send SMS';
+                        console.error('SMS API returned error:', result);
+                        throw new Error(errorMsg);
                     }
                 } catch (error) {
-                    console.error('Hubtel SMS error:', error);
+                    console.error('Hubtel SMS error details:', {
+                        error: error.message,
+                        phoneNumber: phoneNumber,
+                        formattedPhone: formattedPhone || 'N/A',
+                        stack: error.stack
+                    });
                     return {
                         success: false,
                         error: error.message || 'Failed to send SMS'
@@ -5380,108 +5435,122 @@
             }
         };
         
-        // Hubtel Payment Service (uses Basic Authentication)
+        // Hubtel Payment Service
+        // Using redirect-based payment flow (similar to Paystack) to avoid CORS issues
         const hubtelAPI = {
-            // Initialize Hubtel payment
+            // Initialize Hubtel payment using redirect method
+            // This approach works from browser without CORS issues
             async initializePayment(email, amount, invoiceId, metadata = {}) {
-                try {
-                    // Generate unique transaction reference
-                    const transactionRef = `INV-${invoiceId}-${Date.now()}`;
-                    
-                    // Create payment request
-                    // NOTE: Adjust these fields based on Hubtel's actual API requirements
-                    const paymentData = {
-                        amount: amount.toFixed(2),
-                        description: `Payment for Invoice ${invoiceId}`,
-                        callbackUrl: `${window.location.origin}/payment-callback`,
-                        returnUrl: `${window.location.origin}/payment-success`,
-                        merchantReference: transactionRef,
-                        customerEmail: email,
-                        customerName: metadata.client_name || 'Customer',
-                        metadata: {
+                return new Promise((resolve, reject) => {
+                    try {
+                        // Generate unique transaction reference
+                        const transactionRef = `INV-${invoiceId}-${Date.now()}`;
+                        
+                        // Store payment info in sessionStorage for callback handling
+                        sessionStorage.setItem('hubtel_payment', JSON.stringify({
+                            transactionRef: transactionRef,
                             invoiceId: invoiceId,
-                            ...metadata
-                        }
-                    };
-                    
-                    // Create Basic Auth header using Hubtel's authentication method
-                    const authHeader = getHubtelAuthHeader();
-                    
-                    // Make API call to Hubtel with Basic Authentication
-                    // Using HTTP Basic Auth: Authorization: Basic {base64_encode(ClientID:ClientSecret)}
-                    const response = await fetch(`${HUBTEL_PAYMENT_API_BASE_URL}/onlinecheckout/initiate`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Authorization': authHeader
-                        },
-                        body: JSON.stringify(paymentData)
-                    });
-                    
-                    const result = await response.json();
-                    
-                    if (result.responseCode === '0000' && result.data) {
-                        // Payment URL generated successfully
-                        // Open payment page in new window or redirect
+                            amount: amount,
+                            email: email,
+                            metadata: metadata,
+                            timestamp: Date.now()
+                        }));
+                        
+                        // Build Hubtel payment URL
+                        // NOTE: Hubtel payment URL format may vary - check Hubtel documentation
+                        // This is a generic format - adjust based on Hubtel's actual payment page URL
+                        const baseUrl = 'https://pay.hubtel.com/checkout';
+                        const params = new URLSearchParams({
+                            clientid: HUBTEL_CLIENT_ID,
+                            amount: (amount * 100).toString(), // Convert to pesewas (smallest currency unit)
+                            description: encodeURIComponent(`Payment for Invoice ${invoiceId}`),
+                            callbackurl: encodeURIComponent(`${window.location.origin}${window.location.pathname}?payment_callback=1&ref=${transactionRef}`),
+                            returnurl: encodeURIComponent(`${window.location.origin}${window.location.pathname}?payment_success=1&ref=${transactionRef}`),
+                            merchantreference: transactionRef,
+                            customeremail: email,
+                            customername: encodeURIComponent(metadata.client_name || 'Customer')
+                        });
+                        
+                        const paymentUrl = `${baseUrl}?${params.toString()}`;
+                        
+                        // Alternative: If Hubtel uses a different URL format, you may need to:
+                        // 1. Use Hubtel's JavaScript SDK/widget
+                        // 2. Create a server-side proxy to call Hubtel API
+                        // 3. Use Hubtel's direct payment link format
+                        
+                        console.log('Redirecting to Hubtel payment:', paymentUrl);
+                        
+                        // Open payment in new window (similar to Paystack popup)
                         const paymentWindow = window.open(
-                            result.data.checkoutUrl,
+                            paymentUrl,
                             'HubtelPayment',
-                            'width=600,height=700,scrollbars=yes,resizable=yes'
+                            'width=600,height=700,scrollbars=yes,resizable=yes,centerscreen=yes'
                         );
                         
+                        if (!paymentWindow) {
+                            // Popup blocked - redirect in same window
+                            window.location.href = paymentUrl;
+                            return;
+                        }
+                        
                         // Monitor payment window for completion
-                        return new Promise((resolve, reject) => {
-                            const checkInterval = setInterval(() => {
-                                if (paymentWindow.closed) {
-                                    clearInterval(checkInterval);
-                                    // Check payment status
-                                    hubtelAPI.verifyPayment(transactionRef)
-                                        .then(verifyResult => {
-                                            if (verifyResult.success) {
-                                                resolve({
-                                                    success: true,
-                                                    reference: transactionRef,
-                                                    transactionId: transactionRef,
-                                                    status: 'success'
-                                                });
-                                            } else {
-                                                reject({
-                                                    success: false,
-                                                    error: 'Payment verification failed',
-                                                    cancelled: true
-                                                });
-                                            }
-                                        })
-                                        .catch(err => {
-                                            reject({
-                                                success: false,
-                                                error: err.message || 'Payment verification failed',
-                                                cancelled: true
-                                            });
-                                        });
-                                }
-                            }, 1000);
-                            
-                            // Timeout after 30 minutes
-                            setTimeout(() => {
+                        const checkInterval = setInterval(() => {
+                            if (paymentWindow.closed) {
                                 clearInterval(checkInterval);
-                                if (!paymentWindow.closed) {
-                                    paymentWindow.close();
+                                
+                                // Check if payment was successful by checking sessionStorage
+                                const paymentData = sessionStorage.getItem('hubtel_payment_success');
+                                if (paymentData) {
+                                    const successData = JSON.parse(paymentData);
+                                    sessionStorage.removeItem('hubtel_payment_success');
+                                    
+                                    if (successData.success) {
+                                        resolve({
+                                            success: true,
+                                            reference: transactionRef,
+                                            transactionId: successData.reference || transactionRef,
+                                            status: 'success'
+                                        });
+                                    } else {
+                                        reject({
+                                            success: false,
+                                            error: 'Payment was cancelled or failed',
+                                            cancelled: true
+                                        });
+                                    }
+                                } else {
+                                    // User closed window without completing payment
+                                    reject({
+                                        success: false,
+                                        error: 'Payment cancelled by user',
+                                        cancelled: true
+                                    });
                                 }
-                                reject({
-                                    success: false,
-                                    error: 'Payment timeout',
-                                    cancelled: true
-                                });
-                            }, 1800000);
+                            }
+                        }, 1000);
+                        
+                        // Timeout after 30 minutes
+                        setTimeout(() => {
+                            clearInterval(checkInterval);
+                            if (!paymentWindow.closed) {
+                                paymentWindow.close();
+                            }
+                            reject({
+                                success: false,
+                                error: 'Payment timeout',
+                                cancelled: true
+                            });
+                        }, 1800000);
+                        
+                    } catch (error) {
+                        console.error('Hubtel payment error:', error);
+                        reject({
+                            success: false,
+                            error: error.message || 'Failed to initialize payment',
+                            cancelled: false
                         });
-                    } else {
-                        throw new Error(result.responseText || 'Failed to initialize payment');
                     }
-                } catch (error) {
-                    console.error('Hubtel payment error:', error);
-                    throw error;
-                }
+                });
             },
             
             // Verify payment status
@@ -11778,21 +11847,38 @@
                         // Try to get phone from request data
                         if (request.clientPhone) {
                             clientPhone = request.clientPhone;
+                            console.log('Using phone from request.clientPhone:', clientPhone);
                         } else if (request.clientUid) {
                             // Try to get phone from user data
+                            console.log('Fetching user data for clientUid:', request.clientUid);
                             const userDataResult = await firebaseUsers.getUser(request.clientUid);
-                            if (userDataResult.success && userDataResult.data && userDataResult.data.phone) {
-                                clientPhone = userDataResult.data.phone;
+                            if (userDataResult.success && userDataResult.data) {
+                                console.log('User data retrieved:', userDataResult.data);
+                                if (userDataResult.data.phone) {
+                                    clientPhone = userDataResult.data.phone;
+                                    console.log('Using phone from user data:', clientPhone);
+                                } else {
+                                    console.warn('User data found but no phone number:', userDataResult.data);
+                                }
+                            } else {
+                                console.warn('Failed to get user data:', userDataResult.error);
                             }
+                        } else {
+                            console.warn('No clientUid or clientPhone found in request');
                         }
                         
                         if (clientPhone) {
                             const smsMessage = `✅ Provider Assigned!\n\nYour ${request.service} request has been assigned to:\n\nProvider: ${providerName}\nPhone: ${providerPhone}\n\nThey will contact you soon. - HomeFix`;
                             
+                            console.log('Attempting to send SMS to:', clientPhone);
                             const smsResult = await hubtelSMS.sendSMS(clientPhone, smsMessage);
-                            if (!smsResult.success) {
-                                console.warn('SMS notification failed:', smsResult.error);
+                            if (smsResult.success) {
+                                console.log('✅ SMS sent successfully:', smsResult);
+                            } else {
+                                console.error('❌ SMS notification failed:', smsResult.error);
                             }
+                        } else {
+                            console.warn('No client phone number available to send SMS');
                         }
                     } catch (smsError) {
                         console.error('Error sending provider assignment SMS:', smsError);
@@ -12531,8 +12617,58 @@
             setInterval(showNextSlide, 4000);
         }
 
+        // Handle Hubtel payment callback
+        function handleHubtelPaymentCallback() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const paymentCallback = urlParams.get('payment_callback');
+            const paymentSuccess = urlParams.get('payment_success');
+            
+            if (paymentCallback || paymentSuccess) {
+                // Get payment data from sessionStorage
+                const paymentDataStr = sessionStorage.getItem('hubtel_payment');
+                if (paymentDataStr) {
+                    const paymentData = JSON.parse(paymentDataStr);
+                    
+                    // Check URL parameters for payment status
+                    const status = urlParams.get('status');
+                    const reference = urlParams.get('reference') || urlParams.get('transaction_id');
+                    
+                    if (status === 'success' || paymentSuccess) {
+                        // Payment successful
+                        sessionStorage.setItem('hubtel_payment_success', JSON.stringify({
+                            success: true,
+                            reference: reference || paymentData.transactionRef,
+                            transactionRef: paymentData.transactionRef
+                        }));
+                        
+                        // Close the payment window if it's a popup
+                        if (window.opener) {
+                            window.close();
+                        } else {
+                            // Redirect to main page
+                            window.location.href = window.location.pathname;
+                        }
+                    } else {
+                        // Payment failed or cancelled
+                        sessionStorage.setItem('hubtel_payment_success', JSON.stringify({
+                            success: false,
+                            reference: reference || paymentData.transactionRef
+                        }));
+                        
+                        if (window.opener) {
+                            window.close();
+                        } else {
+                            window.location.href = window.location.pathname;
+                        }
+                    }
+                }
+            }
+        }
+        
         // Initialize function
         async function initializePage() {
+            // Handle payment callback on page load
+            handleHubtelPaymentCallback();
             // Initialize stats counter animation
             initStatsCounter();
             
