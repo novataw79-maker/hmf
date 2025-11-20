@@ -5101,8 +5101,8 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
     
-    <!-- Paystack Inline JS -->
-    <script src="https://js.paystack.co/v1/inline.js"></script>
+    <!-- Hubtel Payment Gateway -->
+    <!-- Hubtel payment integration will be handled via API calls -->
     <script>
         // ============================================
         // Firebase Configuration
@@ -5311,66 +5311,217 @@
             }
         };
         
-        // Paystack Payment Configuration
-        const PAYSTACK_PUBLIC_KEY = 'pk_test_e9e87ccee455380ede7a75f676e5d42fe127b88b'; // Your Paystack Public Key
+        // Hubtel Configuration
+        // IMPORTANT: Replace these with your actual Hubtel credentials from https://hubtel.com
+        // Get your ClientID and ClientSecret from your Hubtel merchant dashboard
+        const HUBTEL_CLIENT_ID = 'qabgmzaq'; // Your Hubtel Client ID
+        const HUBTEL_CLIENT_SECRET = 'swklgknk'; // Your Hubtel Client Secret
+        const HUBTEL_SENDER_NICKNAME = 'homefixgh'; // Your Hubtel Sender Nickname
         
-        // Paystack Payment Service
-        const paystackAPI = {
-            // Initialize Paystack payment
-            async initializePayment(email, amount, invoiceId, metadata = {}) {
-                return new Promise((resolve, reject) => {
-                    const handler = PaystackPop.setup({
-                        key: PAYSTACK_PUBLIC_KEY,
-                        email: email,
-                        amount: Math.round(amount * 100), // Convert to kobo/pesewas (smallest currency unit)
-                        currency: 'GHS', // Ghana Cedis
-                        ref: `INV-${invoiceId}-${Date.now()}`, // Unique reference
-                        metadata: {
-                            custom_fields: [
-                                {
-                                    display_name: "Invoice ID",
-                                    variable_name: "invoice_id",
-                                    value: invoiceId
-                                },
-                                ...Object.entries(metadata).map(([key, value]) => ({
-                                    display_name: key,
-                                    variable_name: key,
-                                    value: value
-                                }))
-                            ]
-                        },
-                        callback: function(response) {
-                            // Payment successful
-                            resolve({
-                            success: true,
-                                reference: response.reference,
-                                transactionId: response.reference,
-                                status: 'success'
-                            });
-                        },
-                        onClose: function() {
-                            // User closed the payment modal
-                            reject({
-                                success: false,
-                                error: 'Payment cancelled by user',
-                                cancelled: true
-                            });
+        // Hubtel API Endpoints
+        const HUBTEL_SMS_API_URL = 'https://smsc.hubtel.com/v1/messages/send'; // SMS API (uses URL authentication)
+        const HUBTEL_PAYMENT_API_BASE_URL = 'https://api.hubtel.com/v1/merchantaccount/merchants'; // Payment API (uses Basic Auth)
+        
+        // Helper function to create Hubtel Basic Auth header
+        // Hubtel uses HTTP Basic Authentication: Base64(ClientID:ClientSecret)
+        function getHubtelAuthHeader() {
+            // btoa() creates Base64 encoded string
+            const credentials = btoa(`${HUBTEL_CLIENT_ID}:${HUBTEL_CLIENT_SECRET}`);
+            return `Basic ${credentials}`;
+        }
+        
+        // Hubtel SMS Service (uses URL authentication)
+        const hubtelSMS = {
+            // Send SMS using Hubtel SMS API
+            // Uses URL authentication: clientid and clientsecret as query parameters
+            async sendSMS(phoneNumber, message) {
+                try {
+                    // Format phone number (remove leading +, ensure it starts with country code)
+                    let formattedPhone = phoneNumber.replace(/^\+/, ''); // Remove leading +
+                    if (!formattedPhone.startsWith('233')) {
+                        // If doesn't start with 233 (Ghana), add it
+                        formattedPhone = '233' + formattedPhone.replace(/^0/, ''); // Remove leading 0 if present
+                    }
+                    
+                    // Build URL with query parameters (URL authentication method)
+                    const url = new URL(HUBTEL_SMS_API_URL);
+                    url.searchParams.append('clientid', HUBTEL_CLIENT_ID);
+                    url.searchParams.append('clientsecret', HUBTEL_CLIENT_SECRET);
+                    url.searchParams.append('from', HUBTEL_SENDER_NICKNAME);
+                    url.searchParams.append('to', formattedPhone);
+                    url.searchParams.append('content', message);
+                    
+                    // Make API call
+                    const response = await fetch(url.toString(), {
+                        method: 'GET', // SMS API uses GET with query parameters
+                        headers: {
+                            'Content-Type': 'application/json'
                         }
                     });
                     
-                    handler.openIframe();
-                });
-            },
-            
-            // Verify payment (optional - for server-side verification)
-            async verifyPayment(reference) {
-                // This would typically be done on your backend
-                // For now, we'll trust the callback response
+                    const result = await response.json();
+                    
+                    if (result.responseCode === '0000' || result.status === 'Success') {
                         return {
                             success: true,
-                    reference: reference,
-                    status: 'success'
-                };
+                            messageId: result.messageId || result.data?.messageId,
+                            status: 'sent'
+                        };
+                    } else {
+                        throw new Error(result.responseText || result.message || 'Failed to send SMS');
+                    }
+                } catch (error) {
+                    console.error('Hubtel SMS error:', error);
+                    return {
+                        success: false,
+                        error: error.message || 'Failed to send SMS'
+                    };
+                }
+            }
+        };
+        
+        // Hubtel Payment Service (uses Basic Authentication)
+        const hubtelAPI = {
+            // Initialize Hubtel payment
+            async initializePayment(email, amount, invoiceId, metadata = {}) {
+                try {
+                    // Generate unique transaction reference
+                    const transactionRef = `INV-${invoiceId}-${Date.now()}`;
+                    
+                    // Create payment request
+                    // NOTE: Adjust these fields based on Hubtel's actual API requirements
+                    const paymentData = {
+                        amount: amount.toFixed(2),
+                        description: `Payment for Invoice ${invoiceId}`,
+                        callbackUrl: `${window.location.origin}/payment-callback`,
+                        returnUrl: `${window.location.origin}/payment-success`,
+                        merchantReference: transactionRef,
+                        customerEmail: email,
+                        customerName: metadata.client_name || 'Customer',
+                        metadata: {
+                            invoiceId: invoiceId,
+                            ...metadata
+                        }
+                    };
+                    
+                    // Create Basic Auth header using Hubtel's authentication method
+                    const authHeader = getHubtelAuthHeader();
+                    
+                    // Make API call to Hubtel with Basic Authentication
+                    // Using HTTP Basic Auth: Authorization: Basic {base64_encode(ClientID:ClientSecret)}
+                    const response = await fetch(`${HUBTEL_PAYMENT_API_BASE_URL}/onlinecheckout/initiate`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': authHeader
+                        },
+                        body: JSON.stringify(paymentData)
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.responseCode === '0000' && result.data) {
+                        // Payment URL generated successfully
+                        // Open payment page in new window or redirect
+                        const paymentWindow = window.open(
+                            result.data.checkoutUrl,
+                            'HubtelPayment',
+                            'width=600,height=700,scrollbars=yes,resizable=yes'
+                        );
+                        
+                        // Monitor payment window for completion
+                        return new Promise((resolve, reject) => {
+                            const checkInterval = setInterval(() => {
+                                if (paymentWindow.closed) {
+                                    clearInterval(checkInterval);
+                                    // Check payment status
+                                    hubtelAPI.verifyPayment(transactionRef)
+                                        .then(verifyResult => {
+                                            if (verifyResult.success) {
+                                                resolve({
+                                                    success: true,
+                                                    reference: transactionRef,
+                                                    transactionId: transactionRef,
+                                                    status: 'success'
+                                                });
+                                            } else {
+                                                reject({
+                                                    success: false,
+                                                    error: 'Payment verification failed',
+                                                    cancelled: true
+                                                });
+                                            }
+                                        })
+                                        .catch(err => {
+                                            reject({
+                                                success: false,
+                                                error: err.message || 'Payment verification failed',
+                                                cancelled: true
+                                            });
+                                        });
+                                }
+                            }, 1000);
+                            
+                            // Timeout after 30 minutes
+                            setTimeout(() => {
+                                clearInterval(checkInterval);
+                                if (!paymentWindow.closed) {
+                                    paymentWindow.close();
+                                }
+                                reject({
+                                    success: false,
+                                    error: 'Payment timeout',
+                                    cancelled: true
+                                });
+                            }, 1800000);
+                        });
+                    } else {
+                        throw new Error(result.responseText || 'Failed to initialize payment');
+                    }
+                } catch (error) {
+                    console.error('Hubtel payment error:', error);
+                    throw error;
+                }
+            },
+            
+            // Verify payment status
+            async verifyPayment(reference) {
+                try {
+                    // Use Basic Authentication as per Hubtel's API documentation
+                    const authHeader = getHubtelAuthHeader();
+                    
+                    const response = await fetch(`${HUBTEL_PAYMENT_API_BASE_URL}/onlinecheckout/status/${reference}`, {
+                        method: 'GET',
+                        headers: {
+                            'Authorization': authHeader
+                        }
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (result.responseCode === '0000' && result.data) {
+                        const paymentStatus = result.data.status;
+                        return {
+                            success: paymentStatus === 'completed' || paymentStatus === 'success',
+                            reference: reference,
+                            status: paymentStatus,
+                            data: result.data
+                        };
+                    }
+                    
+                    return {
+                        success: false,
+                        reference: reference,
+                        status: 'unknown'
+                    };
+                } catch (error) {
+                    console.error('Hubtel verification error:', error);
+                    return {
+                        success: false,
+                        reference: reference,
+                        error: error.message
+                    };
+                }
             }
         };
         
@@ -7497,19 +7648,19 @@
                     <h2 class="settings-section-title">Payment Methods</h2>
                     <div style="padding: var(--spacing-lg); background: var(--neutral-50); border-radius: var(--radius-lg);">
                         <p style="margin-bottom: var(--spacing-md); color: var(--neutral-700);">
-                            <strong>💳 Paystack Payment Gateway</strong>
+                            <strong>💳 Hubtel Payment Gateway</strong>
                         </p>
                         <p style="color: var(--neutral-600); font-size: 14px; line-height: 1.6; margin-bottom: var(--spacing-md);">
-                            We use Paystack for secure payment processing. When you make a payment, you'll be redirected to Paystack's secure payment page where you can choose from:
+                            We use Hubtel for secure payment processing. When you make a payment, you'll be redirected to Hubtel's secure payment page where you can choose from:
                         </p>
                         <ul style="margin: var(--spacing-md) 0; padding-left: var(--spacing-lg); color: var(--neutral-600); font-size: 14px; line-height: 1.8;">
-                            <li>💳 Debit/Credit Cards (Visa, Mastercard, Verve)</li>
+                            <li>💳 Debit/Credit Cards (Visa, Mastercard)</li>
                             <li>📱 Mobile Money (MTN, Vodafone, AirtelTigo)</li>
                             <li>🏦 Bank Transfer</li>
                             <li>📞 USSD</li>
                         </ul>
                         <p style="margin-top: var(--spacing-md); color: var(--neutral-600); font-size: 14px;">
-                            <strong>🔒 Security:</strong> Your payment information is securely processed by Paystack. We never store your card or account details.
+                            <strong>🔒 Security:</strong> Your payment information is securely processed by Hubtel. We never store your card or account details.
                         </p>
                     </div>
                 </div>
@@ -7518,19 +7669,19 @@
                     <h2 class="settings-section-title">Payment Information</h2>
                     <div style="padding: var(--spacing-lg); background: var(--neutral-50); border-radius: var(--radius-lg); margin-bottom: var(--spacing-lg);">
                         <p style="margin-bottom: var(--spacing-md); color: var(--neutral-700);">
-                            <strong>💳 Paystack Payment Gateway</strong>
+                            <strong>💳 Hubtel Payment Gateway</strong>
                         </p>
                         <p style="color: var(--neutral-600); font-size: 14px; line-height: 1.6;">
-                            We use Paystack for secure payments. You can pay using:
+                            We use Hubtel for secure payments. You can pay using:
                         </p>
                         <ul style="margin: var(--spacing-md) 0; padding-left: var(--spacing-lg); color: var(--neutral-600); font-size: 14px;">
-                            <li>Debit/Credit Cards (Visa, Mastercard, Verve)</li>
+                            <li>Debit/Credit Cards (Visa, Mastercard)</li>
                             <li>Mobile Money (MTN, Vodafone, AirtelTigo)</li>
                             <li>Bank Transfer</li>
                             <li>USSD</li>
                         </ul>
                         <p style="margin-top: var(--spacing-md); color: var(--neutral-600); font-size: 14px;">
-                            Your payment information is securely processed by Paystack. We never store your card details.
+                            Your payment information is securely processed by Hubtel. We never store your card details.
                         </p>
                         </div>
                         <div class="settings-actions">
@@ -7711,7 +7862,7 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
                         </svg>
                     </div>
-                    <div class="faq-answer">We accept payments through Paystack, which supports multiple payment methods including debit/credit cards, mobile money (MTN, Vodafone, AirtelTigo), bank transfers, and USSD. All payments are processed securely through Paystack's payment gateway.</div>
+                    <div class="faq-answer">We accept payments through Hubtel, which supports multiple payment methods including debit/credit cards, mobile money (MTN, Vodafone, AirtelTigo), bank transfers, and USSD. All payments are processed securely through Hubtel's payment gateway.</div>
                 </div>
                 <div class="faq-item" onclick="toggleFAQ(this)">
                     <div class="faq-question">
@@ -7807,7 +7958,7 @@
                     <ul style="margin: var(--spacing-md) 0; padding-left: var(--spacing-lg); color: var(--neutral-700); line-height: 1.8;">
                         <li>Personal identification information (name, email, phone number)</li>
                         <li>Service request details and preferences</li>
-                        <li>Payment information (processed securely through Paystack)</li>
+                        <li>Payment information (processed securely through Hubtel)</li>
                         <li>Communication records with service providers</li>
                         <li>Location data for service delivery</li>
                     </ul>
@@ -7835,7 +7986,7 @@
                     </p>
                     <ul style="margin: var(--spacing-md) 0; padding-left: var(--spacing-lg); color: var(--neutral-700); line-height: 1.8;">
                         <li>With service providers assigned to your requests</li>
-                        <li>With payment processors (Paystack) for transaction processing</li>
+                        <li>With payment processors (Hubtel) for transaction processing</li>
                         <li>When required by law or to protect our rights</li>
                         <li>With your explicit consent</li>
                     </ul>
@@ -7924,7 +8075,7 @@
                 <div class="settings-section">
                     <h2 class="settings-section-title">5. Payments and Refunds</h2>
                     <p style="color: var(--neutral-700); line-height: 1.8; margin-bottom: var(--spacing-md);">
-                        All payments are processed securely through Paystack. Refund policies are determined by individual service providers. HomeFix may facilitate refund requests but is not responsible for refund decisions.
+                        All payments are processed securely through Hubtel. Refund policies are determined by individual service providers. HomeFix may facilitate refund requests but is not responsible for refund decisions.
                     </p>
                 </div>
 
@@ -8149,7 +8300,7 @@
                 <div class="settings-section">
                     <h2 class="settings-section-title">Step 6: Make Payments</h2>
                     <p style="color: var(--neutral-700); line-height: 1.8; margin-bottom: var(--spacing-md);">
-                        Once you receive an invoice, you can pay securely through Paystack using various payment methods including cards, mobile money, or bank transfer.
+                        Once you receive an invoice, you can pay securely through Hubtel using various payment methods including cards, mobile money, or bank transfer.
                     </p>
                 </div>
             </div>
@@ -8231,10 +8382,10 @@
                 <div class="settings-section">
                     <h2 class="settings-section-title">Accepted Payment Methods</h2>
                     <p style="color: var(--neutral-700); line-height: 1.8; margin-bottom: var(--spacing-md);">
-                        We accept payments through Paystack, which supports:
+                        We accept payments through Hubtel, which supports:
                     </p>
                     <ul style="margin: var(--spacing-md) 0; padding-left: var(--spacing-lg); color: var(--neutral-700); line-height: 1.8;">
-                        <li>💳 Debit/Credit Cards (Visa, Mastercard, Verve)</li>
+                        <li>💳 Debit/Credit Cards (Visa, Mastercard)</li>
                         <li>📱 Mobile Money (MTN, Vodafone, AirtelTigo)</li>
                         <li>🏦 Bank Transfer</li>
                         <li>📞 USSD</li>
@@ -8248,7 +8399,7 @@
                         <li>Click on the invoice in your task details</li>
                         <li>Review the invoice items and total amount</li>
                         <li>Click "Pay Now" to proceed to payment</li>
-                        <li>You'll be redirected to Paystack's secure payment page</li>
+                        <li>You'll be redirected to Hubtel's secure payment page</li>
                         <li>Choose your preferred payment method and complete the transaction</li>
                         <li>You'll receive a payment confirmation</li>
                     </ol>
@@ -8257,7 +8408,7 @@
                 <div class="settings-section">
                     <h2 class="settings-section-title">Payment Security</h2>
                     <p style="color: var(--neutral-700); line-height: 1.8; margin-bottom: var(--spacing-md);">
-                        All payments are processed securely through Paystack. We never store your card or account details. Paystack is PCI DSS compliant and uses industry-standard encryption to protect your payment information.
+                        All payments are processed securely through Hubtel. We never store your card or account details. Hubtel uses industry-standard encryption and security measures to protect your payment information.
                     </p>
                 </div>
 
@@ -9257,7 +9408,7 @@
                                     <div style="font-size: 20px; color: ${request.invoice.status === 'paid' || request.invoice.paymentStatus === 'paid' ? '#166534' : '#92400E'}; font-weight: 800;">₵${request.invoice.total.toFixed(2)}</div>
                                     <div style="font-size: 12px; color: ${request.invoice.status === 'paid' || request.invoice.paymentStatus === 'paid' ? '#166534' : '#92400E'}; margin-top: var(--spacing-xs);">
                                         Invoice ID: ${request.invoice.id || 'N/A'}
-                                        ${request.invoice.status === 'paid' || request.invoice.paymentStatus === 'paid' ? ` • Paid via ${request.invoice.paymentMethod || 'Paystack'}` : ''}
+                                        ${request.invoice.status === 'paid' || request.invoice.paymentStatus === 'paid' ? ` • Paid via ${request.invoice.paymentMethod || 'Hubtel'}` : ''}
                                     </div>
                                 </div>
                                 <div style="font-size: 32px;">${request.invoice.status === 'paid' || request.invoice.paymentStatus === 'paid' ? '✅' : '💰'}</div>
@@ -9317,8 +9468,8 @@
             }
         }
 
-        // Initiate Paystack Payment
-        async function initiatePaystackPayment(request) {
+        // Initiate Hubtel Payment
+        async function initiateHubtelPayment(request) {
             const invoice = request.invoice;
             const amount = invoice.total;
             
@@ -9337,11 +9488,11 @@
             }
             
             // Confirm payment
-            const confirmMessage = `💳 Paystack Payment\n\n` +
+            const confirmMessage = `💳 Hubtel Payment\n\n` +
                 `Invoice ID: ${invoice.id}\n` +
                 `Amount: ₵${amount.toFixed(2)}\n` +
                 `Email: ${userEmail}\n\n` +
-                `You will be redirected to Paystack to complete your payment.\n\n` +
+                `You will be redirected to Hubtel to complete your payment.\n\n` +
                 `Continue?`;
             
             if (!confirm(confirmMessage)) {
@@ -9349,10 +9500,10 @@
             }
             
             try {
-                // Initialize Paystack payment
-                const paymentResult = await paystackAPI.initializePayment(
+                // Initialize Hubtel payment
+                const paymentResult = await hubtelAPI.initializePayment(
                     userEmail,
-                amount,
+                    amount,
                     invoice.id,
                     {
                         request_id: request.id,
@@ -9364,39 +9515,62 @@
                 if (paymentResult.success) {
                     // Payment successful - update invoice
                     const requestResult = await firebaseRequests.getRequest(request.id);
-                        if (requestResult.success && requestResult.data) {
-                            const updatedInvoice = {
-                                ...request.invoice,
-                                status: 'paid',
-                                paymentStatus: 'paid',
-                                paidAt: new Date().toISOString(),
+                    if (requestResult.success && requestResult.data) {
+                        const updatedInvoice = {
+                            ...request.invoice,
+                            status: 'paid',
+                            paymentStatus: 'paid',
+                            paidAt: new Date().toISOString(),
                             transactionId: paymentResult.reference,
-                            paymentMethod: 'Paystack'
-                            };
-                            
+                            paymentMethod: 'Hubtel'
+                        };
+                        
                         await firebaseRequests.updateRequest(request.id, {
-                                invoice: updatedInvoice
-                            });
-                            
-                            alert(`✅ Payment Successful!\n\n` +
+                            invoice: updatedInvoice
+                        });
+                        
+                        // Send SMS notification for payment confirmation
+                        try {
+                            // Get user phone number
+                            const userDataResult = await firebaseUsers.getUser(currentUser.uid);
+                            if (userDataResult.success && userDataResult.data && userDataResult.data.phone) {
+                                const phoneNumber = userDataResult.data.phone;
+                                const smsMessage = `✅ Payment Confirmed!\n\nInvoice: ${invoice.id}\nAmount: ₵${amount.toFixed(2)}\nRef: ${paymentResult.reference}\n\nThank you for your payment! - HomeFix`;
+                                
+                                const smsResult = await hubtelSMS.sendSMS(phoneNumber, smsMessage);
+                                if (!smsResult.success) {
+                                    console.warn('SMS notification failed:', smsResult.error);
+                                }
+                            }
+                        } catch (smsError) {
+                            console.error('Error sending payment confirmation SMS:', smsError);
+                            // Don't block payment success if SMS fails
+                        }
+                        
+                        alert(`✅ Payment Successful!\n\n` +
                             `Invoice ID: ${invoice.id}\n` +
                             `Amount Paid: ₵${amount.toFixed(2)}\n` +
                             `Transaction Reference: ${paymentResult.reference}\n\n` +
-                                `Thank you for your payment!`);
-                            
-                            // Refresh tasks
-                            renderTasks();
-                        }
+                            `Thank you for your payment!`);
+                        
+                        // Refresh tasks
+                        renderTasks();
                     }
+                }
             } catch (error) {
                 if (error.cancelled) {
                     // User cancelled - no need to show error
                     return;
                 }
                 
-                console.error('Paystack payment error:', error);
+                console.error('Hubtel payment error:', error);
                 alert(`Payment failed: ${error.error || error.message || 'An error occurred'}\n\nPlease try again or contact support.`);
-                }
+            }
+        }
+        
+        // Alias for backward compatibility
+        async function initiatePaystackPayment(request) {
+            return initiateHubtelPayment(request);
         }
 
         // View User Request (new function for actual user requests)
@@ -10299,7 +10473,7 @@
 
         function addPaymentMethod(event) {
             event.preventDefault();
-            // Payment methods are handled by Paystack during checkout
+            // Payment methods are handled by Hubtel during checkout
             // No need to store payment methods locally
             hideAddPaymentMethod();
         }
@@ -11597,6 +11771,34 @@
                         });
                     }
                     
+                    // Send SMS notification to client about provider assignment
+                    try {
+                        let clientPhone = null;
+                        
+                        // Try to get phone from request data
+                        if (request.clientPhone) {
+                            clientPhone = request.clientPhone;
+                        } else if (request.clientUid) {
+                            // Try to get phone from user data
+                            const userDataResult = await firebaseUsers.getUser(request.clientUid);
+                            if (userDataResult.success && userDataResult.data && userDataResult.data.phone) {
+                                clientPhone = userDataResult.data.phone;
+                            }
+                        }
+                        
+                        if (clientPhone) {
+                            const smsMessage = `✅ Provider Assigned!\n\nYour ${request.service} request has been assigned to:\n\nProvider: ${providerName}\nPhone: ${providerPhone}\n\nThey will contact you soon. - HomeFix`;
+                            
+                            const smsResult = await hubtelSMS.sendSMS(clientPhone, smsMessage);
+                            if (!smsResult.success) {
+                                console.warn('SMS notification failed:', smsResult.error);
+                            }
+                        }
+                    } catch (smsError) {
+                        console.error('Error sending provider assignment SMS:', smsError);
+                        // Don't block assignment if SMS fails
+                    }
+                    
                     // Hide the form
                     hideAssignProviderForm(id);
                     
@@ -11609,7 +11811,7 @@
                     // Reload requests to show updated status
                     await loadAgentRequests();
                     
-                    alert(`✅ Provider assigned successfully!\n\nProvider: ${providerName}\nEmail: ${providerEmail}\nPhone: ${providerPhone}\nSpecialization: ${providerSpecialization}\n\nThe client has been notified.`);
+                    alert(`✅ Provider assigned successfully!\n\nProvider: ${providerName}\nEmail: ${providerEmail}\nPhone: ${providerPhone}\nSpecialization: ${providerSpecialization}\n\nThe client has been notified via SMS and email.`);
                 } else {
                     alert('Failed to assign provider. Please try again.');
                     console.error('Update error:', updateResult.error);
@@ -11702,10 +11904,38 @@
                 const invoice = request.invoice;
                 const invoiceMessage = createInvoiceMessage(request, invoice);
                 
+                // Send SMS notification when resending invoice
+                try {
+                    let clientPhone = null;
+                    
+                    // Try to get phone from request data
+                    if (request.clientPhone) {
+                        clientPhone = request.clientPhone;
+                    } else if (request.clientUid) {
+                        // Try to get phone from user data
+                        const userDataResult = await firebaseUsers.getUser(request.clientUid);
+                        if (userDataResult.success && userDataResult.data && userDataResult.data.phone) {
+                            clientPhone = userDataResult.data.phone;
+                        }
+                    }
+                    
+                    if (clientPhone) {
+                        const smsMessage = `📄 Invoice Reminder from HomeFix\n\nInvoice ID: ${invoice.id}\nService: ${request.service}\nTotal: ₵${invoice.total.toFixed(2)}\n\nPlease login to view details and make payment.\n\nThank you! - HomeFix`;
+                        
+                        const smsResult = await hubtelSMS.sendSMS(clientPhone, smsMessage);
+                        if (!smsResult.success) {
+                            console.warn('SMS notification failed:', smsResult.error);
+                        }
+                    }
+                } catch (smsError) {
+                    console.error('Error sending invoice reminder SMS:', smsError);
+                    // Don't block resend if SMS fails
+                }
+                
                 const confirmMessage = `✅ Invoice resent successfully to ${request.clientEmail}\n\n` +
                     `Invoice ID: ${invoice.id}\n` +
                     `Total Amount: ₵${invoice.total.toFixed(2)}\n\n` +
-                    `The client has been notified via email.`;
+                    `The client has been notified via email and SMS.`;
                 
                 alert(confirmMessage);
             }
@@ -12100,12 +12330,40 @@
                 invoiceMessage = `Service: ${request.service}\nTotal: ₵${total.toFixed(2)}`;
             }
             
+            // Send SMS notification to client
+            try {
+                let clientPhone = null;
+                
+                // Try to get phone from request data
+                if (request.clientPhone) {
+                    clientPhone = request.clientPhone;
+                } else if (request.clientUid) {
+                    // Try to get phone from user data
+                    const userDataResult = await firebaseUsers.getUser(request.clientUid);
+                    if (userDataResult.success && userDataResult.data && userDataResult.data.phone) {
+                        clientPhone = userDataResult.data.phone;
+                    }
+                }
+                
+                if (clientPhone) {
+                    const smsMessage = `📄 New Invoice from HomeFix\n\nInvoice ID: ${invoiceData.id}\nService: ${request.service}\nTotal: ₵${total.toFixed(2)}\n\nPlease check your email or login to view details and make payment.\n\nThank you! - HomeFix`;
+                    
+                    const smsResult = await hubtelSMS.sendSMS(clientPhone, smsMessage);
+                    if (!smsResult.success) {
+                        console.warn('SMS notification failed:', smsResult.error);
+                    }
+                }
+            } catch (smsError) {
+                console.error('Error sending invoice SMS:', smsError);
+                // Don't block invoice sending if SMS fails
+            }
+            
             // Show success message with invoice details
             const confirmMessage = `✅ Invoice sent successfully to ${request.clientEmail}\n\n` +
                 `Invoice ID: ${invoiceData.id}\n` +
                 `Total Amount: ₵${total.toFixed(2)}\n\n` +
                 `Invoice Details:\n${invoiceMessage}\n\n` +
-                `The client has been notified via email.`;
+                `The client has been notified via email and SMS.`;
             
             alert(confirmMessage);
             
