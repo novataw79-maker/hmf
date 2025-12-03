@@ -240,7 +240,7 @@
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
             background-attachment: fixed;
-            color: var(--white);
+            color: var(--neutral-900);
             line-height: 1.6;
             overflow-x: hidden;
             -webkit-font-smoothing: antialiased;
@@ -5354,6 +5354,7 @@
         const HUBTEL_CLIENT_ID = 'qabgmzaq'; // Your Hubtel Client ID
         const HUBTEL_CLIENT_SECRET = 'swklgknk'; // Your Hubtel Client Secret
         const HUBTEL_SENDER_NICKNAME = 'homefixgh'; // Your Hubtel Sender Nickname
+        const HOMEFIX_AGENT_PHONE = '+233200000000'; // TODO: Replace with your main agent/admin phone in E164 format
         
         // Hubtel API Endpoints
         // SMS API: https://smsc.hubtel.com/v1/messages/send
@@ -7225,6 +7226,12 @@
     <div class="screen" id="tasks-screen">
         <div class="main-container">
             <div class="tasks-header">
+                <a href="#" class="back-button" onclick="showScreen('home'); return false;">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                    Back to Home
+                </a>
                 <h1 class="tasks-title">My Tasks</h1>
                 <div class="tabs-row">
                     <button class="tab active" onclick="switchTaskTab('current', event)">Current Tasks</button>
@@ -9324,6 +9331,25 @@
                 
                 newRequest.id = result.id; // Store the generated ID
                 console.log('✅ Request created successfully:', newRequest.id, newRequest);
+
+                // Send SMS to agent/admin about new request
+                try {
+                    if (HOMEFIX_AGENT_PHONE) {
+                        const smsMessage = `📩 New Service Request\n\nClient: ${newRequest.clientName}\nPhone: ${newRequest.clientPhone}\nService: ${newRequest.service}\nWhen: ${newRequest.date} at ${newRequest.preferredTime}\nLocation: ${newRequest.location}`;
+                        console.log('Attempting to send SMS to agent:', HOMEFIX_AGENT_PHONE);
+                        const smsResult = await hubtelSMS.sendSMS(HOMEFIX_AGENT_PHONE, smsMessage);
+                        if (smsResult.success) {
+                            console.log('✅ Agent SMS sent successfully:', smsResult);
+                        } else {
+                            console.error('❌ Failed to send agent SMS:', smsResult.error);
+                        }
+                    } else {
+                        console.warn('HOMEFIX_AGENT_PHONE is not configured; skipping agent SMS.');
+                    }
+                } catch (agentSmsError) {
+                    console.error('Error sending new-request SMS to agent:', agentSmsError);
+                    // Do not block user flow if SMS fails
+                }
 
                 // Populate confirmation details
                 const confirmationDetails = document.getElementById('confirmation-details');
