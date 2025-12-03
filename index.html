@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!Doctype html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -613,11 +613,29 @@
             padding: var(--spacing-sm) var(--spacing-md);
             border-radius: var(--radius-md);
             transition: all 0.2s;
+            cursor: pointer;
+            display: inline-block;
+            position: relative;
         }
 
         .nav-link:hover {
             color: var(--primary-500);
             background: var(--primary-50);
+        }
+
+        .nav-link:active {
+            transform: scale(0.98);
+        }
+
+        .nav-link-highlight {
+            border: 1px solid var(--primary-200);
+            background: rgba(165, 59, 43, 0.08);
+            box-shadow: 0 4px 10px rgba(165, 59, 43, 0.15);
+        }
+
+        .nav-link-highlight:hover {
+            background: rgba(165, 59, 43, 0.15);
+            color: var(--primary-600);
         }
 
         .premium-badge {
@@ -1422,11 +1440,17 @@
             padding: var(--spacing-sm) var(--spacing-md);
             border-radius: var(--radius-md);
             transition: all 0.2s;
+            cursor: pointer;
+            position: relative;
         }
 
         .back-button:hover {
             background: var(--neutral-50);
             color: var(--primary-500);
+        }
+
+        .back-button:active {
+            transform: scale(0.98);
         }
 
         .service-header-content {
@@ -3017,12 +3041,22 @@
             color: var(--primary-500);
             text-decoration: none;
             font-weight: 500;
-            transition: color 0.2s;
+            transition: all 0.2s;
+            cursor: pointer;
+            display: inline-block;
+            padding: var(--spacing-xs) var(--spacing-sm);
+            border-radius: var(--radius-sm);
+            position: relative;
         }
 
         .auth-link:hover {
             color: var(--primary-600);
             text-decoration: underline;
+            background: var(--primary-50);
+        }
+
+        .auth-link:active {
+            transform: scale(0.98);
         }
 
         .auth-divider {
@@ -3221,11 +3255,21 @@
             text-decoration: none;
             font-size: 15px;
             font-weight: 500;
-            transition: color 0.2s;
+            transition: all 0.2s;
+            cursor: pointer;
+            position: relative;
+            display: inline-block;
+            padding: var(--spacing-sm) var(--spacing-md);
+            border-radius: var(--radius-md);
         }
 
         .landing-nav-link:hover {
             color: var(--primary-500);
+            background: var(--primary-50);
+        }
+
+        .landing-nav-link:active {
+            transform: scale(0.98);
         }
 
         .mobile-menu-toggle {
@@ -3266,6 +3310,8 @@
         }
 
         .mobile-menu-link {
+            cursor: pointer;
+            position: relative;
             color: var(--neutral-700);
             text-decoration: none;
             font-size: 16px;
@@ -3280,26 +3326,17 @@
             color: var(--primary-500);
         }
 
+        .mobile-menu-link:active {
+            transform: scale(0.98);
+        }
+
         .landing-hero {
-            background: linear-gradient(135deg, rgba(165, 59, 43, 0.1) 0%, rgba(255, 255, 255, 0.9) 100%), url('images/bird-s-eye-view-shanghai.png');
+            background-image: url('images/bird-s-eye-view-shanghai.png');
             background-size: cover;
             background-position: center;
-            background-blend-mode: overlay;
             padding: var(--spacing-3xl) var(--spacing-lg);
             text-align: center;
             position: relative;
-        }
-
-        .landing-hero::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(135deg, var(--primary-50) 0%, var(--white) 100%);
-            opacity: 0.7;
-            z-index: 0;
         }
 
         .landing-hero-container {
@@ -3321,14 +3358,14 @@
         .landing-hero-title {
             font-size: 56px;
             font-weight: 700;
-            color: var(--neutral-900);
+            color: var(--white);
             margin-bottom: var(--spacing-lg);
             line-height: 1.2;
         }
 
         .landing-hero-subtitle {
             font-size: 24px;
-            color: var(--neutral-700);
+            color: #FECACA;
             margin-bottom: var(--spacing-2xl);
             font-weight: 400;
             max-width: 700px;
@@ -7115,7 +7152,7 @@
             </div>
 
             <div class="nav-right">
-                <a href="#" class="nav-link" onclick="showScreen('tasks'); return false;">My Tasks</a>
+                <a href="#" class="nav-link nav-link-highlight" onclick="showScreen('tasks'); return false;">My Tasks</a>
                 <div class="premium-badge">PREMIUM</div>
                 <div class="user-menu" onclick="showScreen('profile')">
                     <img src="images/person.png" alt="User" class="user-avatar">
@@ -8756,8 +8793,12 @@
             }, 1000);
         }
 
-        // Screen Navigation
-        async function showScreen(screen) {
+        // Navigation state tracking
+        let isNavigatingFromHistory = false;
+        let currentNavigationState = { type: 'landing', screen: null };
+
+        // Screen Navigation with Browser History Support
+        async function showScreen(screen, skipHistory = false) {
             // Handle password reset screen (it's in auth-container, not main-content)
             if (screen === 'password-reset') {
                 const authContainer = document.getElementById('auth-container');
@@ -8779,6 +8820,14 @@
                 if (passwordResetScreen) {
                     passwordResetScreen.classList.add('active');
                 }
+                
+                // Add to browser history
+                if (!skipHistory) {
+                    const state = { type: 'auth', screen: 'password-reset' };
+                    history.pushState(state, '', `#password-reset`);
+                    currentNavigationState = state;
+                }
+                
                 window.scrollTo(0, 0);
                 return;
             }
@@ -8799,6 +8848,14 @@
                 if (targetScreen) {
                     targetScreen.classList.add('active');
                 }
+                
+                // Add to browser history
+                if (!skipHistory) {
+                    const state = { type: 'public', screen: screen };
+                    history.pushState(state, '', `#${screen}`);
+                    currentNavigationState = state;
+                }
+                
                 window.scrollTo(0, 0);
                 return;
             }
@@ -8871,6 +8928,13 @@
                 }
             } else {
                 sessionManager.unsubscribeFromSessions();
+            }
+            
+            // Add to browser history for authenticated screens
+            if (!skipHistory) {
+                const state = { type: 'app', screen: screen };
+                history.pushState(state, '', `#${screen}`);
+                currentNavigationState = state;
             }
             
             // Scroll to top
@@ -10609,7 +10673,7 @@
             }
         });
 
-        function showAuthPage(page) {
+        function showAuthPage(page, skipHistory = false) {
             const landingPage = document.getElementById('landing-page');
             const authContainer = document.getElementById('auth-container');
             
@@ -10622,9 +10686,16 @@
             } else {
                 switchToSignIn();
             }
+            
+            // Add to browser history
+            if (!skipHistory) {
+                const state = { type: 'auth', page: page };
+                history.pushState(state, '', `#auth-${page}`);
+                currentNavigationState = state;
+            }
         }
 
-        function showLandingPage() {
+        function showLandingPage(skipHistory = false) {
             const landingPage = document.getElementById('landing-page');
             const authContainer = document.getElementById('auth-container');
             const agentContainer = document.getElementById('agent-container');
@@ -10651,6 +10722,13 @@
             if (mainContent) {
                 mainContent.classList.remove('authenticated');
                 mainContent.style.display = 'none';
+            }
+            
+            // Add to browser history
+            if (!skipHistory) {
+                const state = { type: 'landing', screen: null };
+                history.pushState(state, '', '#');
+                currentNavigationState = state;
             }
         }
 
@@ -12665,8 +12743,74 @@
             }
         }
         
+        // Browser History Navigation Handler
+        function handleBrowserNavigation(event) {
+            isNavigatingFromHistory = true;
+            
+            // Get the state from the event or from the URL hash
+            let state = event?.state || currentNavigationState;
+            const hash = window.location.hash.replace('#', '');
+            
+            // If no state but we have a hash, try to determine state from hash
+            if (!state && hash) {
+                if (hash.startsWith('auth-')) {
+                    const page = hash.replace('auth-', '');
+                    state = { type: 'auth', page: page };
+                } else if (hash === 'password-reset') {
+                    state = { type: 'auth', screen: 'password-reset' };
+                } else if (['privacy-policy', 'terms-conditions'].includes(hash)) {
+                    state = { type: 'public', screen: hash };
+                } else {
+                    state = { type: 'app', screen: hash };
+                }
+            }
+            
+            // If still no state, default to landing page
+            if (!state) {
+                state = { type: 'landing', screen: null };
+            }
+            
+            // Navigate based on state
+            if (state.type === 'landing') {
+                showLandingPage(true); // skipHistory = true to avoid infinite loop
+            } else if (state.type === 'auth') {
+                if (state.screen === 'password-reset') {
+                    showScreen('password-reset', true);
+                } else if (state.page) {
+                    showAuthPage(state.page, true);
+                }
+            } else if (state.type === 'public') {
+                showScreen(state.screen, true);
+            } else if (state.type === 'app') {
+                showScreen(state.screen, true);
+            }
+            
+            currentNavigationState = state;
+            isNavigatingFromHistory = false;
+        }
+        
         // Initialize function
         async function initializePage() {
+            // Initialize browser history
+            // Set initial state if there's no state in history
+            if (!history.state) {
+                const hash = window.location.hash.replace('#', '');
+                if (hash) {
+                    // Restore state from hash
+                    handleBrowserNavigation(null);
+                } else {
+                    // Set initial landing page state
+                    const initialState = { type: 'landing', screen: null };
+                    history.replaceState(initialState, '', '#');
+                    currentNavigationState = initialState;
+                }
+            } else {
+                currentNavigationState = history.state;
+            }
+            
+            // Add popstate event listener for browser back/forward buttons
+            window.addEventListener('popstate', handleBrowserNavigation);
+            
             // Handle payment callback on page load
             handleHubtelPaymentCallback();
             // Initialize stats counter animation
