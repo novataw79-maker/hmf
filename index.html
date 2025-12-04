@@ -676,25 +676,16 @@
 
         /* Hero Section - Fiverr Style */
         .hero-section {
-            background: linear-gradient(135deg, rgba(165, 59, 43, 0.1) 0%, rgba(255, 255, 255, 0.9) 100%), url('images/bird-s-eye-view-shanghai.png');
+            background-image: url('images/bird-s-eye-view-shanghai.png');
             background-size: cover;
             background-position: center;
-            background-blend-mode: overlay;
             padding: var(--spacing-3xl) var(--spacing-lg);
             text-align: center;
             position: relative;
         }
 
         .hero-section::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: linear-gradient(135deg, var(--primary-50) 0%, var(--white) 100%);
-            opacity: 0.7;
-            z-index: 0;
+            content: none;
         }
 
         .hero-container {
@@ -707,14 +698,14 @@
         .hero-title {
             font-size: 48px;
             font-weight: 700;
-            color: var(--neutral-900);
+            color: var(--white);
             margin-bottom: var(--spacing-md);
             line-height: 1.2;
         }
 
         .hero-subtitle {
             font-size: 24px;
-            color: var(--neutral-700);
+            color: var(--white);
             margin-bottom: var(--spacing-2xl);
             font-weight: 400;
         }
@@ -7367,7 +7358,7 @@
             </div>
             <div class="service-cta-card">
                 <h3 class="service-cta-title">Get Started</h3>
-                <div class="service-cta-price" id="service-price">Starting at $50</div>
+                <div class="service-cta-price" id="service-price">Starting at 100 GHS</div>
                 <p class="service-cta-note">Price may vary based on requirements</p>
                 <button class="btn btn-primary service-cta-btn" onclick="startSurvey()">Request Service</button>
                 <button class="btn btn-ghost service-cta-btn" onclick="showScreen('home')">Browse More</button>
@@ -8760,6 +8751,83 @@
                 icon: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253',
                 image: 'images/gardener-garden-with-hut-cuts-tree-with-hedgehogs-against-sky.png'
             },
+            { 
+                key: 'masonry', 
+                label: 'Masonry & Concrete', 
+                description: 'Block work, concrete pouring, and structural repairs',
+                icon: 'M4 6h16M4 12h16M4 18h16',
+                image: 'images/slide1.jpg'
+            },
+            { 
+                key: 'tiling', 
+                label: 'Tiling & Terrazzo', 
+                description: 'Precision tile installation for floors and walls',
+                icon: 'M4 4h16v16H4zM4 12h16M12 4v16',
+                image: 'images/slide2.jpg'
+            },
+            { 
+                key: 'hvac', 
+                label: 'HVAC & Cooling', 
+                description: 'Air conditioning installation and maintenance',
+                icon: 'M12 2v4m0 12v4m8-8h4M2 12h4m11.314-6.314l2.828-2.828M4.858 19.142l2.828-2.828M19.142 19.142l-2.828-2.828M4.858 4.858l2.828 2.828',
+                image: 'images/slide3.jpg'
+            },
+            { 
+                key: 'roofing', 
+                label: 'Roofing', 
+                description: 'Roof installation, leak repairs, and inspections',
+                icon: 'M3 9l9-6 9 6v11a2 2 0 01-2 2H5a2 2 0 01-2-2zM9 22V12h6v10',
+                image: 'images/slide4.jpg'
+            },
+            { 
+                key: 'appliance', 
+                label: 'Appliance Repair', 
+                description: 'Fix refrigerators, washers, and kitchen appliances',
+                icon: 'M6 2h12a2 2 0 012 2v16a2 2 0 01-2 2H6a2 2 0 01-2-2V4a2 2 0 012-2zm0 6h12',
+                image: 'images/slide5.jpg'
+            },
+            { 
+                key: 'security', 
+                label: 'Security & CCTV', 
+                description: 'Camera installations and smart security systems',
+                icon: 'M2 12s3-6 10-6 10 6 10 6-3 6-10 6-10-6-10-6zm10 3a3 3 0 100-6 3 3 0 000 6z',
+                image: 'images/exclusive.jpg'
+            },
+            { 
+                key: 'pestcontrol', 
+                label: 'Pest Control', 
+                description: 'Eco-friendly pest prevention and treatment',
+                icon: 'M4 4h16v16H4zM9 4l6 16',
+                image: 'images/3dt.png'
+            },
+            { 
+                key: 'flooring', 
+                label: 'Flooring & Polishing', 
+                description: 'Hardwood, laminate, and epoxy floor solutions',
+                icon: 'M4 6h16M4 12h16M4 18h16',
+                image: 'images/logo.png'
+            },
+            { 
+                key: 'pool', 
+                label: 'Pool Maintenance', 
+                description: 'Cleaning, chemical balance, and pump repairs',
+                icon: 'M3 18s3-2 9-2 9 2 9 2V6s-3 2-9 2-9-2-9-2z',
+                image: 'images/slide2.jpg'
+            },
+            { 
+                key: 'moving', 
+                label: 'Moving & Relocation', 
+                description: 'Professional movers and packing assistance',
+                icon: 'M3 7h18v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7zm0 0l4-4h10l4 4',
+                image: 'images/slide3.jpg'
+            },
+            { 
+                key: 'interiordesign', 
+                label: 'Interior Design', 
+                description: 'Space planning and decor consultation',
+                icon: 'M4 6h16M4 12h16M4 18h16M8 6v12',
+                image: 'images/bird-s-eye-view-shanghai.jpg'
+            },
         ];
 
         // Mock Tasks Data
@@ -9058,7 +9126,7 @@
                     'Trash removal',
                     'Eco-friendly cleaning products'
                 ],
-                price: 'Starting at $50',
+                price: 'Starting at 100 GHS',
                 icon: 'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z',
                 image: 'images/cleaning-service.png',
                 backgroundImage: 'images/bucket-with-cleaning-products-defocused-father-son.jpg'
@@ -9075,7 +9143,7 @@
                     'Water heater service',
                     'Emergency repairs'
                 ],
-                price: 'Starting at $75',
+                price: 'Starting at 100 GHS',
                 icon: 'M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z',
                 image: 'images/plumbing.png',
                 backgroundImage: 'images/plumber-icon.png'
@@ -9092,7 +9160,7 @@
                     'Light fixture installation',
                     'Safety inspections'
                 ],
-                price: 'Starting at $80',
+                price: 'Starting at 100 GHS',
                 icon: 'M13 10V3L4 14h7v7l9-11h-7z',
                 image: 'images/electrical.png',
                 backgroundImage: 'images/electric-machines-switches-isolated-white-close-up-connect-marker-cable-device-with-red-screwdriver.jpg'
@@ -9109,7 +9177,7 @@
                     'Trim and molding',
                     'Shelving installation'
                 ],
-                price: 'Starting at $60',
+                price: 'Starting at 100 GHS',
                 icon: 'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4',
                 image: 'images/Carpentry.png',
                 backgroundImage: 'images/man-wears-safety-goggles-while-using-chisel-hammer-avoid-injury.jpg'
@@ -9126,7 +9194,7 @@
                     'Primer application',
                     'Clean-up included'
                 ],
-                price: 'Starting at $100',
+                price: 'Starting at 100 GHS',
                 icon: 'M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01',
                 image: 'images/Painting.png',
                 backgroundImage: 'images/male-hand-paints-with-white-paint-wood.jpg'
@@ -9143,10 +9211,197 @@
                     'Fertilization',
                     'Seasonal cleanup'
                 ],
-                price: 'Starting at $40',
+                price: 'Starting at 100 GHS',
                 icon: 'M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253',
                 image: 'images/gardener-garden-with-hut-cuts-tree-with-hedgehogs-against-sky.png',
                 backgroundImage: 'images/gardener-garden-with-hut-cuts-tree-with-hedgehogs-against-sky.png'
+            },
+            masonry: {
+                label: 'Masonry & Concrete',
+                description: 'Block work, concrete pouring, and structural repairs.',
+                about: 'Our masonry experts handle everything from foundation reinforcement to detailed stone finishes. We ensure structural integrity and a premium finish on every project.',
+                includes: [
+                    'Block laying and rendering',
+                    'Concrete slab pouring',
+                    'Foundation reinforcement',
+                    'Retaining wall construction',
+                    'Driveway and paving stones',
+                    'Structural crack repairs'
+                ],
+                price: 'Starting at 100 GHS',
+                icon: 'M4 6h16M4 12h16M4 18h16',
+                image: 'images/slide1.jpg',
+                backgroundImage: 'images/slide1.jpg'
+            },
+            tiling: {
+                label: 'Tiling & Terrazzo',
+                description: 'Precision tile installation for floors and walls.',
+                about: 'From ceramic floors to luxury terrazzo, our tiling team delivers perfectly aligned finishes with durable waterproofing and trims.',
+                includes: [
+                    'Floor and wall tile installation',
+                    'Bathroom and kitchen tiling',
+                    'Backsplash design',
+                    'Regrouting and sealing',
+                    'Waterproofing membranes',
+                    'Edge trims and finishing'
+                ],
+                price: 'Starting at 100 GHS',
+                icon: 'M4 4h16v16H4zM4 12h16M12 4v16',
+                image: 'images/slide2.jpg',
+                backgroundImage: 'images/slide2.jpg'
+            },
+            hvac: {
+                label: 'HVAC & Cooling',
+                description: 'Air conditioning installation and maintenance.',
+                about: 'Certified HVAC technicians keep your spaces cool with expert installation, servicing, and energy-efficient upgrades.',
+                includes: [
+                    'AC installation and replacement',
+                    'Preventive servicing',
+                    'Duct cleaning',
+                    'Thermostat setup',
+                    'Refrigerant checks',
+                    'Emergency repairs'
+                ],
+                price: 'Starting at 100 GHS',
+                icon: 'M12 2v4m0 12v4m8-8h4M2 12h4m11.314-6.314l2.828-2.828M4.858 19.142l2.828-2.828M19.142 19.142l-2.828-2.828M4.858 4.858l2.828 2.828',
+                image: 'images/slide3.jpg',
+                backgroundImage: 'images/slide3.jpg'
+            },
+            roofing: {
+                label: 'Roofing',
+                description: 'Roof installation, leak repairs, and inspections.',
+                about: 'Protect your property with durable roofing solutions. We install, inspect, and repair all roofing systems with premium materials.',
+                includes: [
+                    'Leak inspection and sealing',
+                    'Shingle and sheet replacement',
+                    'Metal and tile roofing',
+                    'Gutter installation and cleaning',
+                    'Waterproof membrane application',
+                    'Storm damage restoration'
+                ],
+                price: 'Starting at 100 GHS',
+                icon: 'M3 9l9-6 9 6v11a2 2 0 01-2 2H5a2 2 0 01-2-2zM9 22V12h6v10',
+                image: 'images/slide4.jpg',
+                backgroundImage: 'images/slide4.jpg'
+            },
+            appliance: {
+                label: 'Appliance Repair',
+                description: 'Fix refrigerators, washers, and kitchen appliances.',
+                about: 'Certified appliance technicians troubleshoot and repair all major home appliances with genuine parts and warranties.',
+                includes: [
+                    'Refrigerator diagnostics',
+                    'Washer & dryer repair',
+                    'Oven and stove servicing',
+                    'Dishwasher troubleshooting',
+                    'Microwave and small appliance fixes',
+                    'Preventive maintenance plans'
+                ],
+                price: 'Starting at 100 GHS',
+                icon: 'M6 2h12a2 2 0 012 2v16a2 2 0 01-2 2H6a2 2 0 01-2-2V4a2 2 0 012-2zm0 6h12',
+                image: 'images/slide5.jpg',
+                backgroundImage: 'images/slide5.jpg'
+            },
+            security: {
+                label: 'Security & CCTV',
+                description: 'Camera installations and smart security systems.',
+                about: 'Upgrade your safety with CCTV, smart locks, and alarm integrations tailored to your property layout.',
+                includes: [
+                    'CCTV camera installation',
+                    'Smart video doorbells',
+                    'Alarm system wiring',
+                    'Access control systems',
+                    'Intercom setup',
+                    '24/7 monitoring integration'
+                ],
+                price: 'Starting at 100 GHS',
+                icon: 'M2 12s3-6 10-6 10 6 10 6-3 6-10 6-10-6-10-6zm10 3a3 3 0 100-6 3 3 0 000 6z',
+                image: 'images/exclusive.jpg',
+                backgroundImage: 'images/exclusive.jpg'
+            },
+            pestcontrol: {
+                label: 'Pest Control',
+                description: 'Eco-friendly pest prevention and treatment.',
+                about: 'Protect your home with targeted pest control programs that are safe for families and pets.',
+                includes: [
+                    'Comprehensive inspections',
+                    'Fumigation services',
+                    'Rodent proofing',
+                    'Termite treatment plans',
+                    'Mosquito & insect control',
+                    'Follow-up monitoring visits'
+                ],
+                price: 'Starting at 100 GHS',
+                icon: 'M4 4h16v16H4zM9 4l6 16',
+                image: 'images/3dt.png',
+                backgroundImage: 'images/3dt.png'
+            },
+            flooring: {
+                label: 'Flooring & Polishing',
+                description: 'Hardwood, laminate, and epoxy floor solutions.',
+                about: 'Bring new life to your floors with expert installation, sanding, and finishing services.',
+                includes: [
+                    'Hardwood installation',
+                    'Sanding and polishing',
+                    'Laminate & vinyl fitting',
+                    'Epoxy coating systems',
+                    'Stair refinishing',
+                    'Moisture barrier installation'
+                ],
+                price: 'Starting at 100 GHS',
+                icon: 'M4 6h16M4 12h16M4 18h16',
+                image: 'images/logo.png',
+                backgroundImage: 'images/logo.png'
+            },
+            pool: {
+                label: 'Pool Maintenance',
+                description: 'Cleaning, chemical balance, and pump repairs.',
+                about: 'Keep your pool sparkling with routine cleaning, chemical management, and equipment servicing.',
+                includes: [
+                    'Weekly cleaning schedules',
+                    'Chemical balancing',
+                    'Pump and filter repairs',
+                    'Tile brushing and vacuuming',
+                    'Leak detection',
+                    'Opening & closing services'
+                ],
+                price: 'Starting at 100 GHS',
+                icon: 'M3 18s3-2 9-2 9 2 9 2V6s-3 2-9 2-9-2-9-2z',
+                image: 'images/slide2.jpg',
+                backgroundImage: 'images/slide2.jpg'
+            },
+            moving: {
+                label: 'Moving & Relocation',
+                description: 'Professional movers and packing assistance.',
+                about: 'Stress-free relocation solutions with careful packing, transport, and setup in your new space.',
+                includes: [
+                    'Packing materials & supplies',
+                    'Furniture disassembly',
+                    'Loading and transport',
+                    'Unpacking and setup',
+                    'Storage coordination',
+                    'Insurance coordination'
+                ],
+                price: 'Starting at 100 GHS',
+                icon: 'M3 7h18v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7zm0 0l4-4h10l4 4',
+                image: 'images/slide3.jpg',
+                backgroundImage: 'images/slide3.jpg'
+            },
+            interiordesign: {
+                label: 'Interior Design',
+                description: 'Space planning and decor consultation.',
+                about: 'Create inspiring interiors with professional designers who blend functionality with style.',
+                includes: [
+                    'Space planning workshops',
+                    'Concept boards & palettes',
+                    'Furniture sourcing',
+                    'Lighting layouts',
+                    '3D visualizations',
+                    'On-site styling sessions'
+                ],
+                price: 'Starting at 100 GHS',
+                icon: 'M4 6h16M4 12h16M4 18h16M8 6v12',
+                image: 'images/bird-s-eye-view-shanghai.jpg',
+                backgroundImage: 'images/bird-s-eye-view-shanghai.jpg'
             }
         };
 
