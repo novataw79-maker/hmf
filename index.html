@@ -5392,26 +5392,28 @@
             right: 20px;
             width: 60px;
             height: 60px;
-            background: linear-gradient(135deg, var(--primary-500) 0%, var(--primary-600) 100%);
+            background: var(--gradient-primary);
             border-radius: 50%;
             box-shadow: 0 4px 20px rgba(165, 59, 43, 0.4);
-            display: none; /* Hidden by default, shown when user logs in */
+            display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
             z-index: 9999;
             transition: all 0.3s ease;
             color: var(--white);
+            font-size: 28px;
+            border: none;
         }
 
-        /* Hide on landing page and agent dashboard */
-        #landing-page ~ .floating-chat-button,
+        /* Hide on agent dashboard only - keep visible on landing page */
         .agent-dashboard.active ~ .floating-chat-button {
             display: none !important;
         }
 
         .floating-chat-button:hover {
             transform: scale(1.1);
+            background: var(--gradient-primary-hover);
             box-shadow: 0 6px 25px rgba(165, 59, 43, 0.5);
         }
 
@@ -5441,6 +5443,307 @@
             }
             50% {
                 transform: scale(1.1);
+            }
+        }
+
+        /* AI Chat Widget Styles */
+        .ai-chat-widget {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 380px;
+            max-width: calc(100vw - 40px);
+            height: 600px;
+            max-height: calc(100vh - 40px);
+            background: #ffffff;
+            border-radius: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+            display: none;
+            flex-direction: column;
+            z-index: 10000;
+            overflow: hidden;
+            animation: slideInUp 0.3s ease-out;
+        }
+
+        .ai-chat-widget.open {
+            display: flex;
+        }
+
+        @keyframes slideInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px) scale(0.95);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        .ai-chat-header {
+            background: var(--gradient-primary);
+            color: white;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-radius: 20px 20px 0 0;
+        }
+
+        .ai-chat-header-title {
+            font-size: 18px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .ai-chat-header-title::before {
+            content: '🤖';
+            font-size: 24px;
+        }
+
+        .ai-chat-close-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            color: white;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .ai-chat-close-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: rotate(90deg);
+        }
+
+        .ai-chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #f9fafb;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .ai-chat-messages::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .ai-chat-messages::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .ai-chat-messages::-webkit-scrollbar-thumb {
+            background: #d1d5db;
+            border-radius: 3px;
+        }
+
+        .ai-chat-message {
+            display: flex;
+            gap: 10px;
+            animation: fadeInMessage 0.3s ease-out;
+        }
+
+        @keyframes fadeInMessage {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .ai-chat-message.ai {
+            justify-content: flex-start;
+        }
+
+        .ai-chat-message.user {
+            justify-content: flex-end;
+        }
+
+        .ai-chat-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .ai-chat-message.ai .ai-chat-avatar {
+            background: var(--gradient-primary);
+        }
+
+        .ai-chat-message.user .ai-chat-avatar {
+            background: linear-gradient(135deg, var(--primary-600) 0%, var(--primary-700) 100%);
+        }
+
+        .ai-chat-bubble {
+            max-width: 75%;
+            padding: 12px 16px;
+            border-radius: 18px;
+            font-size: 14px;
+            line-height: 1.5;
+            word-wrap: break-word;
+        }
+
+        .ai-chat-message.ai .ai-chat-bubble {
+            background: white;
+            color: #1f2937;
+            border-bottom-left-radius: 4px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+        }
+
+        .ai-chat-message.user .ai-chat-bubble {
+            background: var(--gradient-primary);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .ai-chat-time {
+            font-size: 11px;
+            color: #9ca3af;
+            margin-top: 4px;
+            padding: 0 4px;
+        }
+
+        .ai-chat-suggestions {
+            padding: 0 20px 16px;
+            background: #f9fafb;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        .ai-chat-suggestion {
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 12px 16px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 14px;
+            color: #374151;
+            text-align: left;
+            width: 100%;
+        }
+
+        .ai-chat-suggestion:hover {
+            background: var(--primary-50);
+            border-color: var(--primary-500);
+            transform: translateX(4px);
+        }
+
+        .ai-chat-suggestion:last-child {
+            margin-bottom: 0;
+        }
+
+        .ai-chat-input-container {
+            padding: 16px 20px;
+            background: white;
+            border-top: 1px solid #e5e7eb;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .ai-chat-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid #e5e7eb;
+            border-radius: 24px;
+            font-size: 14px;
+            outline: none;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+
+        .ai-chat-input:focus {
+            border-color: var(--primary-500);
+            box-shadow: 0 0 0 3px rgba(165, 59, 43, 0.1);
+        }
+
+        .ai-chat-send-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: var(--gradient-primary);
+            border: none;
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            flex-shrink: 0;
+        }
+
+        .ai-chat-send-btn:hover {
+            transform: scale(1.05);
+            background: var(--gradient-primary-hover);
+            box-shadow: 0 4px 12px rgba(165, 59, 43, 0.3);
+        }
+
+        .ai-chat-send-btn:active {
+            transform: scale(0.95);
+        }
+
+        .ai-chat-send-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+
+        .ai-chat-agent-option {
+            margin-top: 12px;
+            padding: 12px;
+            background: #fef3c7;
+            border: 1px solid #fbbf24;
+            border-radius: 12px;
+            font-size: 13px;
+            color: #92400e;
+            text-align: center;
+        }
+
+        .ai-chat-agent-option a {
+            color: var(--primary-600);
+            text-decoration: none;
+            font-weight: 600;
+            margin-left: 4px;
+        }
+
+        .ai-chat-agent-option a:hover {
+            text-decoration: underline;
+        }
+
+
+        @media (max-width: 768px) {
+            .ai-chat-widget {
+                width: calc(100vw - 20px);
+                height: calc(100vh - 20px);
+                bottom: 10px;
+                right: 10px;
+                border-radius: 16px;
+            }
+
+
+            .ai-chat-header {
+                padding: 16px;
+            }
+
+            .ai-chat-messages {
+                padding: 16px;
             }
         }
 
@@ -6110,7 +6413,7 @@
         // IMPORTANT: Replace these with your actual Hubtel credentials from https://hubtel.com
         // Get your ClientID and ClientSecret from your Hubtel merchant dashboard
         const HUBTEL_CLIENT_ID = 'qabgmzaq'; // Your Hubtel Client ID
-        const HUBTEL_CLIENT_SECRET = 'swklgknk'; // Your Hubtel Client Secret
+        const HUBTEL_CLIENT_SECRET = 'dgusrgas'; // Your Hubtel Client Secret
         const HUBTEL_SENDER_NICKNAME = 'homefixgh'; // Your Hubtel Sender Nickname
         const HOMEFIX_AGENT_PHONE = '+233200000000'; // TODO: Replace with your main agent/admin phone in E164 format
         
@@ -6203,16 +6506,31 @@
                     const result = await response.json();
                     console.log('SMS API response:', result);
                     
-                    // Check for success (Hubtel typically returns responseCode: '0000' for success)
-                    if (result.responseCode === '0000' || result.ResponseCode === '0000' || result.status === 'Success') {
+                    // Check for success based on Hubtel API response format
+                    // Success indicators: status === 0, or responseCode === '0000', or status === 'Success'
+                    // Response format: { rate, messageId, status, statusDescription, networkId }
+                    const isSuccess = result.status === 0 || 
+                                     result.status === 'Success' || 
+                                     result.responseCode === '0000' || 
+                                     result.ResponseCode === '0000';
+                    
+                    if (isSuccess) {
                         return {
                             success: true,
                             messageId: result.messageId || result.MessageId || result.data?.messageId || result.Data?.MessageId,
-                            status: 'sent',
+                            rate: result.rate,
+                            status: result.status,
+                            statusDescription: result.statusDescription,
+                            networkId: result.networkId,
                             response: result
                         };
                     } else {
-                        const errorMsg = result.responseText || result.message || result.Message || result.ResponseText || 'Failed to send SMS';
+                        const errorMsg = result.statusDescription || 
+                                        result.responseText || 
+                                        result.message || 
+                                        result.Message || 
+                                        result.ResponseText || 
+                                        `SMS failed with status: ${result.status}`;
                         console.error('SMS API returned error:', result);
                         throw new Error(errorMsg);
                     }
@@ -9066,6 +9384,34 @@
         </div>
     </div>
 
+    <!-- Email Verification Screen -->
+    <div class="screen" id="email-verification-screen">
+        <div class="settings-container">
+            <div class="settings-header">
+                <a href="#" class="back-button" onclick="showScreen('home'); return false;">
+                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                    Back to Home
+                </a>
+                <h1 class="settings-title">Email Verification</h1>
+                <p class="settings-subtitle">Verify your email address</p>
+            </div>
+
+            <div class="settings-card">
+                <div class="settings-section" id="verification-status">
+                    <div style="text-align: center; padding: var(--spacing-2xl);">
+                        <div class="loading-spinner" id="verification-loading" style="display: block; margin: 0 auto 20px;"></div>
+                        <h2 class="settings-section-title" id="verification-title">Verifying your email...</h2>
+                        <p style="color: var(--neutral-700); line-height: 1.8;" id="verification-message">
+                            Please wait while we verify your email address.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Active Sessions Screen -->
     <div class="screen" id="active-sessions-screen">
         <div class="settings-container">
@@ -9454,11 +9800,44 @@
     </div>
 
     <!-- Floating Chat Button -->
-    <div class="floating-chat-button" id="floating-chat-button" onclick="openFloatingChat()">
-        <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"></path>
-        </svg>
-        <span class="floating-chat-badge" id="floating-chat-badge" style="display: none;">0</span>
+    <button class="floating-chat-button" id="floating-chat-button" onclick="toggleAIChat()">💬</button>
+    
+    <!-- AI Chat Widget -->
+    <div class="ai-chat-widget" id="ai-chat-widget">
+        <div class="ai-chat-header">
+            <div class="ai-chat-header-title">Chat with Nix AI</div>
+            <button class="ai-chat-close-btn" onclick="toggleAIChat()">×</button>
+        </div>
+        <div class="ai-chat-messages" id="ai-chat-messages">
+            <div class="ai-chat-message ai">
+                <div class="ai-chat-avatar">🤖</div>
+                <div>
+                    <div class="ai-chat-bubble">
+                        Hello, how can I help? 😊
+                    </div>
+                    <div class="ai-chat-time" id="ai-chat-start-time"></div>
+                </div>
+            </div>
+        </div>
+        <div class="ai-chat-suggestions" id="ai-chat-suggestions">
+            <button class="ai-chat-suggestion" onclick="handleAISuggestion('How do I book a service?')">
+                How do I book a service?
+            </button>
+            <button class="ai-chat-suggestion" onclick="handleAISuggestion('What payment methods are accepted?')">
+                What payment methods are accepted?
+            </button>
+            <button class="ai-chat-suggestion" onclick="handleAISuggestion('How are service providers assigned?')">
+                How are service providers assigned?
+            </button>
+        </div>
+        <div class="ai-chat-input-container">
+            <input type="text" class="ai-chat-input" id="ai-chat-input" placeholder="What do you need help with?" onkeypress="handleAIChatKeyPress(event)">
+            <button class="ai-chat-send-btn" onclick="sendAIMessage()">
+                <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                </svg>
+            </button>
+        </div>
     </div>
 
     <script>
@@ -10342,16 +10721,35 @@
                 newRequest.id = result.id; // Store the generated ID
                 console.log('✅ Request created successfully:', newRequest.id, newRequest);
 
+                // Send SMS to CLIENT confirming their request was received
+                try {
+                    if (newRequest.clientPhone) {
+                        const clientSmsMessage = `✅ Request Received!\n\nHi ${newRequest.clientName}, your ${newRequest.service} request has been received.\n\nDate: ${newRequest.date} at ${newRequest.preferredTime}\nLocation: ${newRequest.location}\n\nWe'll assign a provider soon. - HomeFix`;
+                        console.log('Attempting to send confirmation SMS to client:', newRequest.clientPhone);
+                        const clientSmsResult = await hubtelSMS.sendSMS(newRequest.clientPhone, clientSmsMessage);
+                        if (clientSmsResult.success) {
+                            console.log('✅ Client confirmation SMS sent successfully:', clientSmsResult);
+                        } else {
+                            console.error('❌ Failed to send client confirmation SMS:', clientSmsResult.error);
+                        }
+                    } else {
+                        console.warn('No client phone number available to send confirmation SMS.');
+                    }
+                } catch (clientSmsError) {
+                    console.error('Error sending client confirmation SMS:', clientSmsError);
+                    // Do not block user flow if SMS fails
+                }
+
                 // Send SMS to agent/admin about new request
                 try {
                     if (HOMEFIX_AGENT_PHONE) {
-                        const smsMessage = `📩 New Service Request\n\nClient: ${newRequest.clientName}\nPhone: ${newRequest.clientPhone}\nService: ${newRequest.service}\nWhen: ${newRequest.date} at ${newRequest.preferredTime}\nLocation: ${newRequest.location}`;
+                        const agentSmsMessage = `📩 New Service Request\n\nClient: ${newRequest.clientName}\nPhone: ${newRequest.clientPhone}\nService: ${newRequest.service}\nWhen: ${newRequest.date} at ${newRequest.preferredTime}\nLocation: ${newRequest.location}\n\nRequest ID: ${newRequest.id}`;
                         console.log('Attempting to send SMS to agent:', HOMEFIX_AGENT_PHONE);
-                        const smsResult = await hubtelSMS.sendSMS(HOMEFIX_AGENT_PHONE, smsMessage);
-                        if (smsResult.success) {
-                            console.log('✅ Agent SMS sent successfully:', smsResult);
+                        const agentSmsResult = await hubtelSMS.sendSMS(HOMEFIX_AGENT_PHONE, agentSmsMessage);
+                        if (agentSmsResult.success) {
+                            console.log('✅ Agent SMS sent successfully:', agentSmsResult);
                         } else {
-                            console.error('❌ Failed to send agent SMS:', smsResult.error);
+                            console.error('❌ Failed to send agent SMS:', agentSmsResult.error);
                         }
                     } else {
                         console.warn('HOMEFIX_AGENT_PHONE is not configured; skipping agent SMS.');
@@ -11001,21 +11399,14 @@
         async function initNotifications() {
             const currentUser = firebaseAuth.getCurrentUser();
             if (!currentUser) {
-                // Hide floating chat button if not logged in
-                const floatingButton = document.getElementById('floating-chat-button');
-                if (floatingButton) floatingButton.style.display = 'none';
+                // Keep AI chat button visible for all users
                 return;
             }
 
-            // Show floating chat button only if user is on authenticated pages
-            const mainContent = document.getElementById('main-content');
-            const landingPage = document.getElementById('landing-page');
+            // Keep floating chat button visible (AI chat is available to everyone)
             const floatingButton = document.getElementById('floating-chat-button');
-            if (floatingButton && mainContent && !mainContent.classList.contains('hidden')) {
-                // Only show if not on landing page
-                if (!landingPage || landingPage.classList.contains('hidden')) {
-                    floatingButton.style.display = 'flex';
-                }
+            if (floatingButton) {
+                floatingButton.style.display = 'flex';
             }
 
             // Listen for new notifications
@@ -11136,12 +11527,8 @@
 
         // Open chat from floating button
         function openFloatingChat() {
-            // Reset unread count
-            unreadMessageCount = 0;
-            updateFloatingChatBadge();
-            
-            // Open chat screen
-            showScreen('live-chat');
+            // Open AI chat widget instead
+            toggleAIChat();
         }
 
         // Show notification toast
@@ -12174,7 +12561,31 @@
                     
                     console.log('User session stored locally:', userData);
                     
-                    showSuccess('register-success', 'Account created successfully! Redirecting...');
+                    // Send welcome email with verification link
+                    try {
+                        const sendWelcomeEmail = firebase.functions().httpsCallable('sendWelcomeEmail');
+                        const emailResult = await sendWelcomeEmail({
+                            userId: user.uid,
+                            email: user.email,
+                            name: userData.name || name
+                        });
+                        
+                        if (emailResult.data.success) {
+                            console.log('✅ Welcome email sent successfully');
+                            showSuccess('register-success', 'Account created successfully! Please check your email to verify your account.');
+                        } else {
+                            console.warn('Welcome email may not have been sent:', emailResult.data);
+                            showSuccess('register-success', 'Account created successfully! Redirecting...');
+                        }
+                    } catch (emailError) {
+                        console.error('Error sending welcome email:', emailError);
+                        // Don't block registration if email fails
+                        showSuccess('register-success', 'Account created successfully! Redirecting...');
+                    }
+                    
+                    if (!document.getElementById('register-success').textContent.includes('check your email')) {
+                        showSuccess('register-success', 'Account created successfully! Redirecting...');
+                    }
                     
                     // Immediately update UI - don't wait for checkAuthStatus
                     const authContainer = document.getElementById('auth-container');
@@ -12980,17 +13391,29 @@
                         }
                         
                         if (clientPhone) {
-                            const smsMessage = `✅ Provider Assigned!\n\nYour ${request.service} request has been assigned to:\n\nProvider: ${providerName}\nPhone: ${providerPhone}\n\nThey will contact you soon. - HomeFix`;
+                            // Format provider phone for display
+                            let displayProviderPhone = providerPhone;
+                            if (providerPhone && !providerPhone.startsWith('+')) {
+                                if (providerPhone.startsWith('0')) {
+                                    displayProviderPhone = '+233' + providerPhone.substring(1);
+                                } else if (providerPhone.startsWith('233')) {
+                                    displayProviderPhone = '+' + providerPhone;
+                                } else {
+                                    displayProviderPhone = '+233' + providerPhone;
+                                }
+                            }
                             
-                            console.log('Attempting to send SMS to:', clientPhone);
+                            const smsMessage = `✅ Provider Assigned!\n\nHi ${request.clientName || 'there'}, your ${request.service} request has been assigned to:\n\nProvider: ${providerName}\nPhone: ${displayProviderPhone}\nSpecialization: ${providerSpecialization}\n\nThey will contact you soon. - HomeFix`;
+                            
+                            console.log('Attempting to send provider assignment SMS to:', clientPhone);
                             const smsResult = await hubtelSMS.sendSMS(clientPhone, smsMessage);
                             if (smsResult.success) {
-                                console.log('✅ SMS sent successfully:', smsResult);
+                                console.log('✅ Provider assignment SMS sent successfully:', smsResult);
                             } else {
-                                console.error('❌ SMS notification failed:', smsResult.error);
+                                console.error('❌ Provider assignment SMS notification failed:', smsResult.error);
                             }
                         } else {
-                            console.warn('No client phone number available to send SMS');
+                            console.warn('No client phone number available to send provider assignment SMS');
                         }
                     } catch (smsError) {
                         console.error('Error sending provider assignment SMS:', smsError);
@@ -13890,9 +14313,7 @@
                     unreadMessageCount = 0;
                     lastMessageTimestamp = null;
                     
-                    // Hide floating chat button
-                    const floatingButton = document.getElementById('floating-chat-button');
-                    if (floatingButton) floatingButton.style.display = 'none';
+                    // Keep AI chat button visible (available to all users)
                 }
                 console.log('Auth state changed:', user ? user.uid : 'signed out');
                 if (user) {
@@ -14293,6 +14714,315 @@
             initializeLogoVideos();
         }
         window.addEventListener('load', initializeLogoVideos);
+
+        // AI Chat Widget Functions
+        let aiChatAgentMode = false;
+        let aiChatMessages = [];
+
+        // FAQ Database
+        const aiChatFAQs = {
+            'how do i book a service': {
+                answer: 'Booking a service on HomeFix is easy! Here\'s how:\n\n1. Browse our service categories (Plumbing, Electrical, Cleaning, etc.)\n2. Select the service you need\n3. Fill out the service request form with:\n   - Your location\n   - Service details and requirements\n   - Preferred date and time\n4. Submit your request\n5. Our team will match you with a verified service provider\n6. You\'ll receive a notification once a provider is assigned\n\nYou can track your service requests in your dashboard. Need help with a specific booking? I can connect you with our support team!',
+                needsAgent: false
+            },
+            'what payment methods are accepted': {
+                answer: 'HomeFix accepts multiple secure payment methods through Hubtel:\n\n💳 Payment Options:\n• Debit/Credit Cards (Visa, Mastercard)\n• Mobile Money (MTN, Vodafone, AirtelTigo)\n• Bank Transfers\n• USSD payments\n\nAll payments are processed securely through Hubtel\'s payment gateway. You\'ll receive a payment link after your service request is confirmed.\n\nPayment is typically required:\n• Before service completion (for some services)\n• After service completion (for others)\n\nThe payment method will be specified when you receive your service confirmation.',
+                needsAgent: false
+            },
+            'how are service providers assigned': {
+                answer: 'Service providers are carefully matched to your needs:\n\n✅ Our Process:\n1. Your service request is reviewed by our admin team\n2. We match you with providers based on:\n   - Your location\n   - Service type and requirements\n   - Provider availability and expertise\n   - Provider ratings and reviews\n3. You\'ll receive a notification when a provider is assigned\n4. The provider will contact you to confirm details\n\nAll our service providers are:\n• Verified and background-checked\n• Experienced professionals\n• Insured and licensed (where applicable)\n\nYou can view provider details and ratings before they arrive!',
+                needsAgent: false
+            },
+            'default': {
+                answer: 'I\'m Nix AI, your HomeFix assistant! I can help you with:\n\n• Booking services\n• Payment methods and billing\n• Service provider information\n• Tracking your service requests\n• Canceling or rescheduling services\n• General account questions\n\nIf you need more specific help, I can connect you with a human agent. Would you like me to do that?',
+                needsAgent: false
+            }
+        };
+
+        function toggleAIChat() {
+            const widget = document.getElementById('ai-chat-widget');
+            const button = document.getElementById('floating-chat-button');
+            
+            if (widget.classList.contains('open')) {
+                widget.classList.remove('open');
+                if (button) button.style.display = 'flex';
+            } else {
+                widget.classList.add('open');
+                if (button) button.style.display = 'none';
+                // Set initial time
+                const timeEl = document.getElementById('ai-chat-start-time');
+                if (timeEl && !timeEl.textContent) {
+                    timeEl.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                }
+            }
+        }
+
+        function handleAISuggestion(question) {
+            const input = document.getElementById('ai-chat-input');
+            if (input) {
+                input.value = question;
+            }
+            sendAIMessage();
+        }
+
+        function sendAIMessage() {
+            const input = document.getElementById('ai-chat-input');
+            if (!input) return;
+
+            const message = input.value.trim();
+            if (!message) return;
+
+            // Add user message
+            addAIChatMessage(message, 'user');
+            input.value = '';
+
+            // Hide suggestions after first message
+            const suggestions = document.getElementById('ai-chat-suggestions');
+            if (suggestions) {
+                suggestions.style.display = 'none';
+            }
+
+            // Process AI response
+            setTimeout(() => {
+                processAIResponse(message);
+            }, 500);
+        }
+
+        function processAIResponse(userMessage) {
+            const lowerMessage = userMessage.toLowerCase();
+            let response = null;
+            let needsAgent = false;
+
+            // Check for exact matches or keywords
+            if (lowerMessage.includes('book') || lowerMessage.includes('booking') || lowerMessage.includes('service request')) {
+                response = aiChatFAQs['how do i book a service'];
+            } else if (lowerMessage.includes('payment') || lowerMessage.includes('pay') || lowerMessage.includes('billing') || lowerMessage.includes('money')) {
+                response = aiChatFAQs['what payment methods are accepted'];
+            } else if (lowerMessage.includes('provider') || lowerMessage.includes('assigned') || lowerMessage.includes('professional') || lowerMessage.includes('technician')) {
+                response = aiChatFAQs['how are service providers assigned'];
+            } else if (lowerMessage.includes('agent') || lowerMessage.includes('human') || lowerMessage.includes('speak to') || lowerMessage.includes('support')) {
+                needsAgent = true;
+                response = {
+                    answer: 'I\'m connecting you with a human agent. Please wait a moment...\n\nYou can also email us at support@homefix.com for immediate assistance.',
+                    needsAgent: true
+                };
+            } else {
+                response = aiChatFAQs['default'];
+            }
+
+            if (response) {
+                addAIChatMessage(response.answer, 'ai');
+                
+                if (response.needsAgent || needsAgent) {
+                    showAgentEscalation();
+                } else {
+                    showAgentOption();
+                }
+            }
+        }
+
+        function addAIChatMessage(text, type) {
+            const messagesContainer = document.getElementById('ai-chat-messages');
+            if (!messagesContainer) return;
+
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `ai-chat-message ${type}`;
+            
+            const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            
+            if (type === 'ai') {
+                messageDiv.innerHTML = `
+                    <div class="ai-chat-avatar">🤖</div>
+                    <div>
+                        <div class="ai-chat-bubble">${formatMessage(text)}</div>
+                        <div class="ai-chat-time">${time}</div>
+                    </div>
+                `;
+            } else {
+                messageDiv.innerHTML = `
+                    <div>
+                        <div class="ai-chat-bubble">${text}</div>
+                        <div class="ai-chat-time">${time}</div>
+                    </div>
+                    <div class="ai-chat-avatar">👤</div>
+                `;
+            }
+
+            messagesContainer.appendChild(messageDiv);
+            scrollAIChatToBottom();
+            
+            // Store message
+            aiChatMessages.push({ text, type, time });
+        }
+
+        function formatMessage(text) {
+            // Convert line breaks to <br>
+            return text.replace(/\n/g, '<br>');
+        }
+
+        function showAgentOption() {
+            const messagesContainer = document.getElementById('ai-chat-messages');
+            if (!messagesContainer) return;
+
+            // Check if agent option already exists
+            if (document.getElementById('ai-chat-agent-option')) return;
+
+            const agentDiv = document.createElement('div');
+            agentDiv.id = 'ai-chat-agent-option';
+            agentDiv.className = 'ai-chat-agent-option';
+            agentDiv.innerHTML = `
+                Need more help? <a href="mailto:support@homefix.com" onclick="connectToAgent()">Email support@homefix.com</a> or <a href="#" onclick="connectToAgent(); return false;">connect with an agent</a>
+            `;
+            messagesContainer.appendChild(agentDiv);
+            scrollAIChatToBottom();
+        }
+
+        function showAgentEscalation() {
+            const messagesContainer = document.getElementById('ai-chat-messages');
+            if (!messagesContainer) return;
+
+            // Remove existing agent option if any
+            const existing = document.getElementById('ai-chat-agent-option');
+            if (existing) existing.remove();
+
+            const agentDiv = document.createElement('div');
+            agentDiv.id = 'ai-chat-agent-option';
+            agentDiv.className = 'ai-chat-agent-option';
+            agentDiv.style.background = '#dbeafe';
+            agentDiv.style.borderColor = '#3b82f6';
+            agentDiv.style.color = '#1e40af';
+            agentDiv.innerHTML = `
+                An agent will be with you shortly. In the meantime, you can email <a href="mailto:support@homefix.com">support@homefix.com</a> for immediate assistance.
+            `;
+            messagesContainer.appendChild(agentDiv);
+            scrollAIChatToBottom();
+
+            // Switch to agent mode
+            aiChatAgentMode = true;
+            
+            // Here you would integrate with your existing chat system
+            // For now, we'll just show a message
+            setTimeout(() => {
+                addAIChatMessage('An agent has joined the conversation. How can I help you today?', 'ai');
+            }, 2000);
+        }
+
+        function connectToAgent() {
+            showAgentEscalation();
+            addAIChatMessage('I would like to speak with an agent, please.', 'user');
+        }
+
+        function handleAIChatKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendAIMessage();
+            }
+        }
+
+        function scrollAIChatToBottom() {
+            const messagesContainer = document.getElementById('ai-chat-messages');
+            if (messagesContainer) {
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }
+        }
+
+        // Initialize AI chat time on load
+        document.addEventListener('DOMContentLoaded', function() {
+            const timeEl = document.getElementById('ai-chat-start-time');
+            if (timeEl) {
+                timeEl.textContent = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            }
+            
+            // Check for email verification token in URL
+            checkEmailVerification();
+        });
+
+        // Email Verification Handler
+        async function checkEmailVerification() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const token = urlParams.get('token');
+            const userId = urlParams.get('userId');
+            
+            if (token && userId) {
+                // Show verification screen
+                showScreen('email-verification-screen');
+                
+                // Verify the token
+                try {
+                    const verifyEmailToken = firebase.functions().httpsCallable('verifyEmailToken');
+                    const result = await verifyEmailToken({
+                        userId: userId,
+                        token: token
+                    });
+                    
+                    if (result.data.success && result.data.verified) {
+                        // Success
+                        document.getElementById('verification-loading').style.display = 'none';
+                        document.getElementById('verification-title').textContent = '✅ Email Verified!';
+                        document.getElementById('verification-title').style.color = 'var(--success-600)';
+                        document.getElementById('verification-message').innerHTML = 
+                            'Your email address has been successfully verified!<br><br>' +
+                            'You can now enjoy all features of HomeFix.';
+                        
+                        // Update URL to remove parameters
+                        window.history.replaceState({}, document.title, window.location.pathname);
+                        
+                        // Redirect to home after 3 seconds
+                        setTimeout(() => {
+                            showScreen('home');
+                        }, 3000);
+                    } else {
+                        throw new Error('Verification failed');
+                    }
+                } catch (error) {
+                    console.error('Email verification error:', error);
+                    document.getElementById('verification-loading').style.display = 'none';
+                    document.getElementById('verification-title').textContent = '❌ Verification Failed';
+                    document.getElementById('verification-title').style.color = 'var(--error-500)';
+                    
+                    let errorMessage = 'Unable to verify your email address. ';
+                    const errorCode = error.code || (error.details && error.details.code);
+                    const errorDetails = error.details || error;
+                    
+                    if (errorCode === 'deadline-exceeded' || errorDetails.message?.includes('expired')) {
+                        errorMessage += 'The verification link has expired.';
+                    } else if (errorCode === 'not-found' || errorDetails.message?.includes('not found')) {
+                        errorMessage += 'The verification link is invalid.';
+                    } else {
+                        errorMessage += 'Please try again or request a new verification email.';
+                    }
+                    
+                    document.getElementById('verification-message').innerHTML = errorMessage + '<br><br>' +
+                        '<button class="btn btn-primary" onclick="resendVerificationEmail()" style="margin-top: 20px;">Resend Verification Email</button>';
+                }
+            }
+        }
+
+        // Resend Verification Email
+        async function resendVerificationEmail() {
+            const currentUser = firebaseAuth.getCurrentUser();
+            if (!currentUser) {
+                alert('Please sign in to resend verification email.');
+                showAuthPage('signin');
+                return;
+            }
+            
+            try {
+                const resendEmail = firebase.functions().httpsCallable('resendVerificationEmail');
+                const result = await resendEmail({
+                    userId: currentUser.uid
+                });
+                
+                if (result.data.success) {
+                    alert('Verification email sent! Please check your inbox.');
+                    showScreen('home');
+                } else {
+                    alert('Failed to resend verification email. Please try again.');
+                }
+            } catch (error) {
+                console.error('Error resending verification email:', error);
+                alert('Failed to resend verification email: ' + (error.message || 'Unknown error'));
+            }
+        }
     </script>
 </body>
 </html>
