@@ -5728,6 +5728,297 @@
         }
 
 
+        /* Tour Demo System Styles */
+        .tour-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: transparent;
+            z-index: 99999;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .tour-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .tour-spotlight {
+            position: absolute;
+            border-radius: 16px;
+            background: transparent;
+            /* Create dark overlay effect using box-shadow - this creates the darkening around the element */
+            box-shadow: 0 0 0 99999px rgba(0, 0, 0, 0.75),
+                        0 0 0 0 rgba(165, 59, 43, 0),
+                        inset 0 0 0 2px rgba(165, 59, 43, 0.4);
+            transition: all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+            pointer-events: none;
+            z-index: 100000;
+        }
+
+        /* Add a subtle glow effect around the highlighted element */
+        .tour-spotlight::before {
+            content: '';
+            position: absolute;
+            top: -4px;
+            left: -4px;
+            right: -4px;
+            bottom: -4px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, rgba(165, 59, 43, 0.3) 0%, rgba(220, 38, 38, 0.2) 100%);
+            box-shadow: 0 0 30px rgba(165, 59, 43, 0.4),
+                        inset 0 0 20px rgba(165, 59, 43, 0.2);
+            z-index: -1;
+            animation: tourSpotlightGlow 2s ease-in-out infinite;
+        }
+
+        @keyframes tourSpotlightGlow {
+            0%, 100% {
+                opacity: 0.6;
+                transform: scale(1);
+            }
+            50% {
+                opacity: 1;
+                transform: scale(1.02);
+            }
+        }
+
+        .tour-pointer {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            z-index: 100001;
+            pointer-events: none;
+            transition: all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+            transform-origin: center;
+        }
+
+        .tour-pointer::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border: 4px solid var(--primary-500);
+            border-radius: 50%;
+            animation: tourPointerPulse 2s ease-in-out infinite;
+        }
+
+        .tour-pointer::after {
+            content: '👆';
+            position: absolute;
+            font-size: 32px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            animation: tourPointerBounce 1.5s ease-in-out infinite;
+        }
+
+        @keyframes tourPointerPulse {
+            0%, 100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.3);
+                opacity: 0.5;
+            }
+        }
+
+        @keyframes tourPointerBounce {
+            0%, 100% {
+                transform: translate(-50%, -50%) translateY(0);
+            }
+            50% {
+                transform: translate(-50%, -50%) translateY(-10px);
+            }
+        }
+
+        .tour-dialogue {
+            position: absolute;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.98) 0%, rgba(255, 255, 255, 0.95) 100%);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            padding: 32px;
+            max-width: 420px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3),
+                        0 0 0 1px rgba(255, 255, 255, 0.1),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.6);
+            z-index: 100002;
+            opacity: 0;
+            transform: scale(0.8) translateY(20px);
+            transition: all 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+            border: 2px solid rgba(165, 59, 43, 0.1);
+        }
+
+        .tour-dialogue.active {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+
+        .tour-dialogue-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .tour-dialogue-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: var(--gradient-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            box-shadow: 0 4px 12px rgba(165, 59, 43, 0.3);
+            animation: tourIconFloat 3s ease-in-out infinite;
+        }
+
+        @keyframes tourIconFloat {
+            0%, 100% {
+                transform: translateY(0) rotate(0deg);
+            }
+            50% {
+                transform: translateY(-8px) rotate(5deg);
+            }
+        }
+
+        .tour-dialogue-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--neutral-900);
+            margin: 0;
+            line-height: 1.2;
+        }
+
+        .tour-dialogue-content {
+            font-size: 16px;
+            color: var(--neutral-700);
+            line-height: 1.6;
+            margin-bottom: 24px;
+        }
+
+        .tour-dialogue-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .tour-progress {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .tour-progress-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--neutral-300);
+            transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .tour-progress-dot.active {
+            width: 24px;
+            background: var(--gradient-primary);
+            border-radius: 4px;
+            box-shadow: 0 2px 8px rgba(165, 59, 43, 0.4);
+        }
+
+        .tour-buttons {
+            display: flex;
+            gap: 12px;
+        }
+
+        .tour-btn {
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .tour-btn-primary {
+            background: var(--gradient-primary);
+            color: white;
+            box-shadow: 0 4px 12px rgba(165, 59, 43, 0.3);
+        }
+
+        .tour-btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(165, 59, 43, 0.4);
+        }
+
+        .tour-btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .tour-btn-ghost {
+            background: rgba(255, 255, 255, 0.8);
+            color: var(--neutral-700);
+            border: 2px solid var(--neutral-200);
+        }
+
+        .tour-btn-ghost:hover {
+            background: rgba(255, 255, 255, 1);
+            border-color: var(--neutral-300);
+        }
+
+        .tour-btn-skip {
+            background: transparent;
+            color: var(--neutral-500);
+            padding: 12px 16px;
+        }
+
+        .tour-btn-skip:hover {
+            color: var(--neutral-700);
+        }
+
+        @media (max-width: 768px) {
+            .tour-dialogue {
+                max-width: calc(100vw - 40px);
+                padding: 24px;
+                margin: 20px;
+            }
+
+            .tour-pointer {
+                width: 50px;
+                height: 50px;
+            }
+
+            .tour-pointer::after {
+                font-size: 28px;
+            }
+
+            .tour-dialogue-title {
+                font-size: 20px;
+            }
+
+            .tour-dialogue-content {
+                font-size: 15px;
+            }
+
+            .tour-buttons {
+                flex-direction: column;
+            }
+
+            .tour-btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+
         @media (max-width: 768px) {
             .ai-chat-widget {
                 width: calc(100vw - 20px);
@@ -9062,6 +9353,17 @@
             </div>
 
             <div class="contact-support">
+                <h3 class="contact-support-title">Take a Tour</h3>
+                <p class="contact-support-desc">New to HomeFix? Take an interactive tour of the dashboard</p>
+                <div style="display: flex; gap: var(--spacing-md); justify-content: center; margin-top: var(--spacing-lg); margin-bottom: var(--spacing-2xl);">
+                    <button class="btn btn-primary" onclick="showTour(); showScreen('home');" style="display: flex; align-items: center; gap: 8px;">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z"></path>
+                        </svg>
+                        Start Tour
+                    </button>
+                </div>
+                
                 <h3 class="contact-support-title">Still need help?</h3>
                 <p class="contact-support-desc">Our support team is here to assist you</p>
                 <div style="display: flex; gap: var(--spacing-md); justify-content: center; margin-top: var(--spacing-lg);">
@@ -9802,6 +10104,29 @@
     <!-- Floating Chat Button -->
     <button class="floating-chat-button" id="floating-chat-button" onclick="toggleAIChat()">💬</button>
     
+    <!-- Tour Demo Overlay -->
+    <div class="tour-overlay" id="tour-overlay">
+        <div class="tour-spotlight" id="tour-spotlight"></div>
+        <div class="tour-pointer" id="tour-pointer"></div>
+        <div class="tour-dialogue" id="tour-dialogue">
+            <div class="tour-dialogue-header">
+                <div class="tour-dialogue-icon" id="tour-icon">✨</div>
+                <h3 class="tour-dialogue-title" id="tour-title">Welcome to HomeFix!</h3>
+            </div>
+            <div class="tour-dialogue-content" id="tour-content">
+                Let's take a quick tour to help you get started.
+            </div>
+            <div class="tour-dialogue-footer">
+                <div class="tour-progress" id="tour-progress"></div>
+                <div class="tour-buttons">
+                    <button class="tour-btn tour-btn-skip" onclick="skipTour()">Skip</button>
+                    <button class="tour-btn tour-btn-ghost" id="tour-prev-btn" onclick="previousTourStep()" style="display: none;">Previous</button>
+                    <button class="tour-btn tour-btn-primary" id="tour-next-btn" onclick="nextTourStep()">Next</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- AI Chat Widget -->
     <div class="ai-chat-widget" id="ai-chat-widget">
         <div class="ai-chat-header">
@@ -12236,6 +12561,11 @@
                     // No screen is active, show home screen
                     showScreen('home');
                 }
+                
+                // Initialize tour after UI is ready (only on first login)
+                setTimeout(() => {
+                    initializeTour();
+                }, 2000);
                 
                 console.log('UI updated for authenticated user');
             } else {
@@ -14935,6 +15265,238 @@
             // Check for email verification token in URL
             checkEmailVerification();
         });
+
+        // Tour Demo System
+        let currentTourStep = 0;
+        let tourSteps = [];
+        let tourInterval = null;
+
+        const tourConfig = [
+            {
+                target: '#hero-search-input',
+                title: '🔍 Search for Services',
+                content: 'Use the search bar to quickly find the home service you need. Type keywords like "plumbing", "electrical", or "cleaning" to see relevant services.',
+                position: 'bottom',
+                icon: '🔍'
+            },
+            {
+                target: '#category-grid',
+                title: '📋 Browse Service Categories',
+                content: 'Explore our wide range of professional services. Click on any category card to view details and book a service. We offer plumbing, electrical, cleaning, and more!',
+                position: 'top',
+                icon: '📋'
+            },
+            {
+                target: '.nav-link-highlight',
+                title: '📝 My Tasks',
+                content: 'Track all your service requests here. View current tasks, past services, and manage your bookings. You\'ll receive updates when providers are assigned.',
+                position: 'bottom',
+                icon: '📝'
+            },
+            {
+                target: '.user-menu',
+                title: '👤 Your Profile',
+                content: 'Access your account settings, personal information, payment methods, and preferences. Complete your profile to get personalized recommendations.',
+                position: 'bottom',
+                icon: '👤'
+            },
+            {
+                target: '#floating-chat-button',
+                title: '💬 Nix AI Assistant',
+                content: 'Need help? Chat with Nix AI anytime! Get instant answers to common questions, or connect with a human agent when you need more assistance.',
+                position: 'top',
+                icon: '💬'
+            }
+        ];
+
+        function initializeTour() {
+            // Check if user has completed tour before
+            const tourCompleted = sessionStorage.getItem('homefix_tour_completed');
+            const isFirstLogin = !sessionStorage.getItem('homefix_tour_shown');
+            
+            // Show tour on first login or if explicitly requested
+            if (isFirstLogin && !tourCompleted) {
+                // Wait for page to fully load
+                setTimeout(() => {
+                    startTour();
+                }, 1500);
+            }
+        }
+
+        function startTour() {
+            currentTourStep = 0;
+            tourSteps = tourConfig.filter(step => {
+                const element = document.querySelector(step.target);
+                return element && element.offsetParent !== null; // Check if element is visible
+            });
+
+            if (tourSteps.length === 0) {
+                console.log('No tour steps available');
+                return;
+            }
+
+            const overlay = document.getElementById('tour-overlay');
+            overlay.classList.add('active');
+            
+            sessionStorage.setItem('homefix_tour_shown', 'true');
+            
+            showTourStep(0);
+        }
+
+        function showTourStep(stepIndex) {
+            if (stepIndex < 0 || stepIndex >= tourSteps.length) {
+                endTour();
+                return;
+            }
+
+            currentTourStep = stepIndex;
+            const step = tourSteps[stepIndex];
+            const targetElement = document.querySelector(step.target);
+
+            if (!targetElement) {
+                nextTourStep();
+                return;
+            }
+
+            // Update dialogue content
+            document.getElementById('tour-icon').textContent = step.icon;
+            document.getElementById('tour-title').textContent = step.title;
+            document.getElementById('tour-content').textContent = step.content;
+
+            // Update progress dots
+            updateTourProgress();
+
+            // Update buttons
+            const prevBtn = document.getElementById('tour-prev-btn');
+            const nextBtn = document.getElementById('tour-next-btn');
+            
+            prevBtn.style.display = stepIndex === 0 ? 'none' : 'flex';
+            nextBtn.textContent = stepIndex === tourSteps.length - 1 ? 'Finish' : 'Next';
+
+            // Calculate positions
+            const rect = targetElement.getBoundingClientRect();
+            const scrollX = window.pageXOffset || document.documentElement.scrollLeft;
+            const scrollY = window.pageYOffset || document.documentElement.scrollTop;
+
+            // Position spotlight
+            const spotlight = document.getElementById('tour-spotlight');
+            const padding = 16;
+            spotlight.style.left = (rect.left + scrollX - padding) + 'px';
+            spotlight.style.top = (rect.top + scrollY - padding) + 'px';
+            spotlight.style.width = (rect.width + padding * 2) + 'px';
+            spotlight.style.height = (rect.height + padding * 2) + 'px';
+
+            // Position pointer
+            const pointer = document.getElementById('tour-pointer');
+            let pointerX, pointerY;
+            
+            if (step.position === 'top') {
+                pointerX = rect.left + rect.width / 2;
+                pointerY = rect.top - 40;
+            } else if (step.position === 'bottom') {
+                pointerX = rect.left + rect.width / 2;
+                pointerY = rect.bottom + 40;
+            } else if (step.position === 'left') {
+                pointerX = rect.left - 40;
+                pointerY = rect.top + rect.height / 2;
+            } else { // right
+                pointerX = rect.right + 40;
+                pointerY = rect.top + rect.height / 2;
+            }
+
+            pointer.style.left = (pointerX + scrollX) + 'px';
+            pointer.style.top = (pointerY + scrollY) + 'px';
+
+            // Position dialogue
+            const dialogue = document.getElementById('tour-dialogue');
+            const dialogueWidth = 420;
+            const dialogueHeight = 250;
+            let dialogueX, dialogueY;
+
+            // Smart positioning based on available space
+            if (step.position === 'top') {
+                dialogueX = rect.left + rect.width / 2 - dialogueWidth / 2;
+                dialogueY = rect.top - dialogueHeight - 80;
+            } else if (step.position === 'bottom') {
+                dialogueX = rect.left + rect.width / 2 - dialogueWidth / 2;
+                dialogueY = rect.bottom + 80;
+            } else {
+                // Default: position to the side
+                if (rect.left > window.innerWidth / 2) {
+                    dialogueX = rect.left - dialogueWidth - 40;
+                } else {
+                    dialogueX = rect.right + 40;
+                }
+                dialogueY = rect.top + rect.height / 2 - dialogueHeight / 2;
+            }
+
+            // Keep dialogue within viewport
+            dialogueX = Math.max(20, Math.min(dialogueX, window.innerWidth - dialogueWidth - 20));
+            dialogueY = Math.max(20, Math.min(dialogueY, window.innerHeight - dialogueHeight - 20));
+
+            dialogue.style.left = dialogueX + 'px';
+            dialogue.style.top = dialogueY + 'px';
+
+            // Animate dialogue in
+            setTimeout(() => {
+                dialogue.classList.add('active');
+            }, 100);
+
+            // Scroll to element if needed
+            targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        function updateTourProgress() {
+            const progressContainer = document.getElementById('tour-progress');
+            progressContainer.innerHTML = '';
+
+            tourSteps.forEach((_, index) => {
+                const dot = document.createElement('div');
+                dot.className = 'tour-progress-dot' + (index === currentTourStep ? ' active' : '');
+                progressContainer.appendChild(dot);
+            });
+        }
+
+        function nextTourStep() {
+            const dialogue = document.getElementById('tour-dialogue');
+            dialogue.classList.remove('active');
+
+            setTimeout(() => {
+                showTourStep(currentTourStep + 1);
+            }, 300);
+        }
+
+        function previousTourStep() {
+            const dialogue = document.getElementById('tour-dialogue');
+            dialogue.classList.remove('active');
+
+            setTimeout(() => {
+                showTourStep(currentTourStep - 1);
+            }, 300);
+        }
+
+        function skipTour() {
+            endTour();
+        }
+
+        function endTour() {
+            const overlay = document.getElementById('tour-overlay');
+            const dialogue = document.getElementById('tour-dialogue');
+            
+            dialogue.classList.remove('active');
+            
+            setTimeout(() => {
+                overlay.classList.remove('active');
+                sessionStorage.setItem('homefix_tour_completed', 'true');
+            }, 400);
+        }
+
+        // Function to manually start tour (can be called from help menu)
+        function showTour() {
+            // Clear tour completion status to allow restart
+            sessionStorage.removeItem('homefix_tour_completed');
+            startTour();
+        }
 
         // Email Verification Handler
         async function checkEmailVerification() {
