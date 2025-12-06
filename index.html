@@ -1317,6 +1317,216 @@
             justify-content: flex-end;
         }
 
+        /* Rating and Feedback Styles */
+        .rating-section {
+            padding: var(--spacing-lg);
+            background: linear-gradient(135deg, rgba(165, 59, 43, 0.05) 0%, rgba(220, 38, 38, 0.05) 100%);
+            border-radius: var(--radius-md);
+            margin-top: var(--spacing-md);
+            border: 1px solid rgba(165, 59, 43, 0.2);
+        }
+
+        .rating-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .rating-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--neutral-900);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .rating-stars {
+            display: flex;
+            gap: var(--spacing-xs);
+            align-items: center;
+            margin: var(--spacing-md) 0;
+        }
+
+        .rating-star {
+            font-size: 28px;
+            color: var(--neutral-300);
+            cursor: pointer;
+            transition: all var(--duration-normal);
+            user-select: none;
+        }
+
+        .rating-star:hover {
+            transform: scale(1.2);
+        }
+
+        .rating-star.active {
+            color: #FCD34D;
+        }
+
+        .rating-star.filled {
+            color: #FCD34D;
+        }
+
+        .rating-value {
+            font-size: 14px;
+            color: var(--neutral-600);
+            margin-left: var(--spacing-sm);
+        }
+
+        .feedback-form {
+            margin-top: var(--spacing-md);
+        }
+
+        .feedback-textarea {
+            width: 100%;
+            min-height: 100px;
+            padding: var(--spacing-md);
+            border: 1px solid var(--neutral-300);
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            font-family: inherit;
+            resize: vertical;
+            transition: all var(--duration-normal);
+        }
+
+        .feedback-textarea:focus {
+            outline: none;
+            border-color: var(--primary-500);
+            box-shadow: 0 0 0 3px rgba(165, 59, 43, 0.1);
+        }
+
+        .rating-submitted {
+            padding: var(--spacing-md);
+            background: var(--success-50);
+            border: 1px solid var(--success-500);
+            border-radius: var(--radius-md);
+            color: var(--success-700);
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .provider-rating-display {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            margin-top: var(--spacing-sm);
+        }
+
+        .provider-rating-stars {
+            display: flex;
+            gap: 2px;
+        }
+
+        .provider-rating-star {
+            font-size: 16px;
+            color: #FCD34D;
+        }
+
+        .provider-rating-text {
+            font-size: 13px;
+            color: var(--neutral-600);
+        }
+
+        /* Agent Provider Ratings View */
+        .provider-ratings-container {
+            padding: var(--spacing-xl);
+        }
+
+        .provider-card {
+            background: var(--white);
+            border: 1px solid var(--neutral-200);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-xl);
+            margin-bottom: var(--spacing-lg);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .provider-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: var(--spacing-lg);
+            padding-bottom: var(--spacing-lg);
+            border-bottom: 1px solid var(--neutral-200);
+        }
+
+        .provider-info {
+            flex: 1;
+        }
+
+        .provider-name {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--neutral-900);
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .provider-details {
+            font-size: 14px;
+            color: var(--neutral-600);
+            margin-bottom: var(--spacing-xs);
+        }
+
+        .provider-overall-rating {
+            text-align: right;
+        }
+
+        .provider-rating-number {
+            font-size: 36px;
+            font-weight: 700;
+            color: var(--primary-500);
+            line-height: 1;
+        }
+
+        .provider-rating-count {
+            font-size: 14px;
+            color: var(--neutral-600);
+            margin-top: var(--spacing-xs);
+        }
+
+        .rating-item {
+            padding: var(--spacing-md);
+            background: var(--neutral-50);
+            border-radius: var(--radius-md);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .rating-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .rating-item-service {
+            font-weight: 600;
+            color: var(--neutral-900);
+        }
+
+        .rating-item-date {
+            font-size: 12px;
+            color: var(--neutral-500);
+        }
+
+        .rating-item-stars {
+            display: flex;
+            gap: 2px;
+            margin-bottom: var(--spacing-sm);
+        }
+
+        .rating-item-feedback {
+            font-size: 14px;
+            color: var(--neutral-700);
+            font-style: italic;
+            margin-top: var(--spacing-sm);
+            padding-top: var(--spacing-sm);
+            border-top: 1px solid var(--neutral-200);
+        }
+
         .btn-text {
             background: none;
             border: none;
@@ -7627,6 +7837,150 @@
                     });
             }
         };
+
+        // Firestore Service - Provider Ratings
+        const firebaseProviderRatings = {
+            async submitRating(requestId, rating, feedback, providerData) {
+                try {
+                    const currentUser = firebaseAuth.getCurrentUser();
+                    if (!currentUser) {
+                        return { success: false, error: 'User not authenticated' };
+                    }
+
+                    // Create rating document
+                    const ratingData = {
+                        requestId: requestId,
+                        providerName: providerData.name,
+                        providerEmail: providerData.email,
+                        providerPhone: providerData.phone,
+                        providerSpecialization: providerData.specialization,
+                        rating: rating,
+                        feedback: feedback || '',
+                        clientUid: currentUser.uid,
+                        clientEmail: currentUser.email || '',
+                        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                        serviceType: providerData.serviceType || ''
+                    };
+
+                    const ratingRef = await db.collection('provider_ratings').add(ratingData);
+
+                    // Update the request with rating info
+                    await firebaseRequests.updateRequest(requestId, {
+                        rating: {
+                            rating: rating,
+                            feedback: feedback || '',
+                            submittedAt: new Date().toISOString()
+                        }
+                    });
+
+                    // Update or create provider summary in provider_ratings_summary collection
+                    const providerKey = `${providerData.email}_${providerData.phone}`;
+                    const summaryRef = db.collection('provider_ratings_summary').doc(providerKey);
+                    
+                    const summaryDoc = await summaryRef.get();
+                    if (summaryDoc.exists) {
+                        const currentData = summaryDoc.data();
+                        const newTotalRatings = (currentData.totalRatings || 0) + 1;
+                        const newTotalScore = (currentData.totalScore || 0) + rating;
+                        const newAverageRating = newTotalScore / newTotalRatings;
+
+                        await summaryRef.update({
+                            totalRatings: newTotalRatings,
+                            totalScore: newTotalScore,
+                            averageRating: newAverageRating,
+                            lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                    } else {
+                        await summaryRef.set({
+                            providerName: providerData.name,
+                            providerEmail: providerData.email,
+                            providerPhone: providerData.phone,
+                            providerSpecialization: providerData.specialization,
+                            totalRatings: 1,
+                            totalScore: rating,
+                            averageRating: rating,
+                            createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                            lastUpdated: firebase.firestore.FieldValue.serverTimestamp()
+                        });
+                    }
+
+                    return { success: true, id: ratingRef.id };
+                } catch (error) {
+                    console.error('Error submitting rating:', error);
+                    return { success: false, error: error.message };
+                }
+            },
+
+            async getProviderRatings(providerEmail, providerPhone) {
+                try {
+                    const providerKey = `${providerEmail}_${providerPhone}`;
+                    const summaryRef = db.collection('provider_ratings_summary').doc(providerKey);
+                    const summaryDoc = await summaryRef.get();
+
+                    if (!summaryDoc.exists) {
+                        return { success: true, data: null };
+                    }
+
+                    // Get all individual ratings for this provider
+                    const ratingsSnapshot = await db.collection('provider_ratings')
+                        .where('providerEmail', '==', providerEmail)
+                        .where('providerPhone', '==', providerPhone)
+                        .orderBy('createdAt', 'desc')
+                        .get();
+
+                    const ratings = [];
+                    ratingsSnapshot.forEach(doc => {
+                        ratings.push({ id: doc.id, ...doc.data() });
+                    });
+
+                    return {
+                        success: true,
+                        data: {
+                            summary: summaryDoc.data(),
+                            ratings: ratings
+                        }
+                    };
+                } catch (error) {
+                    console.error('Error getting provider ratings:', error);
+                    return { success: false, error: error.message };
+                }
+            },
+
+            async getAllProviderRatings() {
+                try {
+                    const summarySnapshot = await db.collection('provider_ratings_summary')
+                        .orderBy('averageRating', 'desc')
+                        .get();
+
+                    const providers = [];
+                    for (const doc of summarySnapshot.docs) {
+                        const summary = doc.data();
+                        const ratingsSnapshot = await db.collection('provider_ratings')
+                            .where('providerEmail', '==', summary.providerEmail)
+                            .where('providerPhone', '==', summary.providerPhone)
+                            .orderBy('createdAt', 'desc')
+                            .limit(10)
+                            .get();
+
+                        const ratings = [];
+                        ratingsSnapshot.forEach(ratingDoc => {
+                            ratings.push({ id: ratingDoc.id, ...ratingDoc.data() });
+                        });
+
+                        providers.push({
+                            id: doc.id,
+                            summary: summary,
+                            recentRatings: ratings
+                        });
+                    }
+
+                    return { success: true, data: providers };
+                } catch (error) {
+                    console.error('Error getting all provider ratings:', error);
+                    return { success: false, error: error.message };
+                }
+            }
+        };
     </script>
     <script>
         // ============================================
@@ -11686,6 +12040,42 @@
                             </div>
                         </div>
                         ` : ''}
+                        ${request.provider && (request.status === 'completed' || request.invoice) ? `
+                        <div class="rating-section" id="rating-section-${request.id}">
+                            ${request.rating ? `
+                            <div class="rating-submitted">
+                                <span>✅</span>
+                                <span>You rated this provider ${request.rating.rating} star${request.rating.rating !== 1 ? 's' : ''}</span>
+                            </div>
+                            ${request.rating.feedback ? `
+                            <div class="rating-item-feedback" style="margin-top: var(--spacing-sm);">
+                                "${request.rating.feedback}"
+                            </div>
+                            ` : ''}
+                            ` : `
+                            <div class="rating-header">
+                                <div class="rating-title">
+                                    <span>⭐</span> Rate Your Experience
+                                </div>
+                            </div>
+                            <div class="rating-stars" id="rating-stars-${request.id}">
+                                <span class="rating-star" data-rating="1" onclick="setRating('${request.id}', 1)">★</span>
+                                <span class="rating-star" data-rating="2" onclick="setRating('${request.id}', 2)">★</span>
+                                <span class="rating-star" data-rating="3" onclick="setRating('${request.id}', 3)">★</span>
+                                <span class="rating-star" data-rating="4" onclick="setRating('${request.id}', 4)">★</span>
+                                <span class="rating-star" data-rating="5" onclick="setRating('${request.id}', 5)">★</span>
+                                <span class="rating-value" id="rating-value-${request.id}"></span>
+                            </div>
+                            <div class="feedback-form" id="feedback-form-${request.id}" style="display: none;">
+                                <textarea class="feedback-textarea" id="feedback-text-${request.id}" placeholder="Share your feedback (optional)..." maxlength="500"></textarea>
+                                <div style="display: flex; gap: var(--spacing-sm); margin-top: var(--spacing-md);">
+                                    <button class="btn btn-primary" onclick="submitRating('${request.id}')" style="flex: 1;">Submit Rating</button>
+                                    <button class="btn btn-ghost" onclick="cancelRating('${request.id}')">Cancel</button>
+                                </div>
+                            </div>
+                            `}
+                        </div>
+                        ` : ''}
                     </div>
                     <div class="task-card-footer" style="display: flex; gap: var(--spacing-sm); flex-wrap: wrap;">
                         ${request.invoice && request.invoice.status !== 'paid' && request.invoice.paymentStatus !== 'paid' ? `
@@ -11704,6 +12094,105 @@
                 </div>
             `;
             }).join('');
+        }
+
+        // Rating Functions
+        let currentRatings = {}; // Store current rating selections
+
+        function setRating(requestId, rating) {
+            currentRatings[requestId] = rating;
+            
+            // Update star display
+            const stars = document.querySelectorAll(`#rating-stars-${requestId} .rating-star`);
+            const valueText = document.getElementById(`rating-value-${requestId}`);
+            const feedbackForm = document.getElementById(`feedback-form-${requestId}`);
+            
+            stars.forEach((star, index) => {
+                if (index < rating) {
+                    star.classList.add('filled');
+                    star.classList.add('active');
+                } else {
+                    star.classList.remove('filled');
+                    star.classList.remove('active');
+                }
+            });
+            
+            valueText.textContent = `${rating} star${rating !== 1 ? 's' : ''}`;
+            feedbackForm.style.display = 'block';
+        }
+
+        async function submitRating(requestId) {
+            const rating = currentRatings[requestId];
+            if (!rating) {
+                alert('Please select a rating first.');
+                return;
+            }
+
+            const feedbackText = document.getElementById(`feedback-text-${requestId}`).value.trim();
+            
+            // Get request data to get provider info
+            const requestResult = await firebaseRequests.getRequest(requestId);
+            if (!requestResult.success || !requestResult.data) {
+                alert('Error: Could not load request details. Please try again.');
+                return;
+            }
+
+            const request = requestResult.data;
+            if (!request.provider) {
+                alert('Error: No provider assigned to this request.');
+                return;
+            }
+
+            // Show loading state
+            const submitBtn = document.querySelector(`#feedback-form-${requestId} .btn-primary`);
+            const originalText = submitBtn ? submitBtn.textContent : 'Submit Rating';
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = 'Submitting...';
+            }
+
+            // Submit rating
+            const result = await firebaseProviderRatings.submitRating(
+                requestId,
+                rating,
+                feedbackText,
+                {
+                    name: request.provider.name,
+                    email: request.provider.email,
+                    phone: request.provider.phone,
+                    specialization: request.provider.specialization,
+                    serviceType: request.service
+                }
+            );
+
+            if (result.success) {
+                // Show success message
+                showNotificationToast('Rating Submitted', 'Thank you for your feedback!', 'success');
+                
+                // Reload tasks to show the submitted rating
+                await renderTasks();
+            } else {
+                alert('Error submitting rating: ' + result.error);
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = originalText;
+                }
+            }
+        }
+
+        function cancelRating(requestId) {
+            delete currentRatings[requestId];
+            const stars = document.querySelectorAll(`#rating-stars-${requestId} .rating-star`);
+            const valueText = document.getElementById(`rating-value-${requestId}`);
+            const feedbackForm = document.getElementById(`feedback-form-${requestId}`);
+            const feedbackText = document.getElementById(`feedback-text-${requestId}`);
+            
+            stars.forEach(star => {
+                star.classList.remove('filled', 'active');
+            });
+            valueText.textContent = '';
+            feedbackForm.style.display = 'none';
+            feedbackText.value = '';
         }
 
         // Pay Invoice from Task Card (helper function)
@@ -12420,7 +12909,82 @@
             
             if (tab === 'chats') {
                 loadAgentChats();
+            } else if (tab === 'ratings') {
+                loadProviderRatings();
             }
+        }
+
+        async function loadProviderRatings() {
+            const container = document.getElementById('provider-ratings-list');
+            if (!container) return;
+
+            container.innerHTML = '<div style="text-align: center; padding: var(--spacing-xl); color: var(--neutral-500);">Loading provider ratings...</div>';
+
+            const result = await firebaseProviderRatings.getAllProviderRatings();
+            
+            if (!result.success) {
+                container.innerHTML = `<div style="text-align: center; padding: var(--spacing-xl); color: var(--error-500);">Error loading ratings: ${result.error}</div>`;
+                return;
+            }
+
+            if (!result.data || result.data.length === 0) {
+                container.innerHTML = '<div style="text-align: center; padding: var(--spacing-3xl); color: var(--neutral-500);">No provider ratings yet.</div>';
+                return;
+            }
+
+            container.innerHTML = result.data.map(provider => {
+                const summary = provider.summary;
+                const avgRating = summary.averageRating.toFixed(1);
+                const totalRatings = summary.totalRatings;
+                
+                return `
+                    <div class="provider-card">
+                        <div class="provider-card-header">
+                            <div class="provider-info">
+                                <div class="provider-name">${summary.providerName}</div>
+                                <div class="provider-details">${summary.providerSpecialization}</div>
+                                <div class="provider-details">📧 ${summary.providerEmail} | 📞 ${summary.providerPhone}</div>
+                            </div>
+                            <div class="provider-overall-rating">
+                                <div class="provider-rating-number">${avgRating}</div>
+                                <div class="provider-rating-stars">
+                                    ${'★'.repeat(Math.round(summary.averageRating))}${'☆'.repeat(5 - Math.round(summary.averageRating))}
+                                </div>
+                                <div class="provider-rating-count">${totalRatings} rating${totalRatings !== 1 ? 's' : ''}</div>
+                            </div>
+                        </div>
+                        <div class="ratings-list">
+                            ${provider.recentRatings.length > 0 ? `
+                                <div style="font-weight: 600; margin-bottom: var(--spacing-md); color: var(--neutral-900);">Recent Ratings:</div>
+                                ${provider.recentRatings.map(rating => {
+                                    const date = rating.createdAt ? new Date(rating.createdAt.toDate ? rating.createdAt.toDate() : rating.createdAt).toLocaleDateString() : 'N/A';
+                                    return `
+                                        <div class="rating-item">
+                                            <div class="rating-item-header">
+                                                <div>
+                                                    <div class="rating-item-service">${rating.serviceType || 'Service'}</div>
+                                                    <div class="rating-item-date">${date}</div>
+                                                </div>
+                                                <div class="rating-item-stars">
+                                                    ${'★'.repeat(rating.rating)}${'☆'.repeat(5 - rating.rating)}
+                                                </div>
+                                            </div>
+                                            ${rating.feedback ? `
+                                            <div class="rating-item-feedback">"${rating.feedback}"</div>
+                                            ` : ''}
+                                            ${rating.clientEmail ? `
+                                            <div style="font-size: 12px; color: var(--neutral-500); margin-top: var(--spacing-xs);">
+                                                Client: ${rating.clientEmail}
+                                            </div>
+                                            ` : ''}
+                                        </div>
+                                    `;
+                                }).join('')}
+                            ` : '<div style="color: var(--neutral-500); font-style: italic;">No individual ratings yet.</div>'}
+                        </div>
+                    </div>
+                `;
+            }).join('');
         }
 
         async function loadAgentChats() {
@@ -15231,6 +15795,7 @@
             <div class="agent-tabs">
                 <button class="agent-tab active" onclick="switchAgentTab('requests')">Requests</button>
                 <button class="agent-tab" onclick="switchAgentTab('chats')">Live Chats</button>
+                <button class="agent-tab" onclick="switchAgentTab('ratings')">Provider Ratings</button>
             </div>
 
             <div class="agent-tab-content active" id="agent-requests-tab">
@@ -15286,6 +15851,20 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
                                 </svg>
                             </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="agent-tab-content" id="agent-ratings-tab">
+                <div class="provider-ratings-container">
+                    <div class="section-header">
+                        <h2 class="section-title">Provider Ratings & Feedback</h2>
+                        <button class="btn btn-primary" onclick="loadProviderRatings()">Refresh</button>
+                    </div>
+                    <div id="provider-ratings-list">
+                        <div style="text-align: center; padding: var(--spacing-3xl); color: var(--neutral-500);">
+                            Loading provider ratings...
                         </div>
                     </div>
                 </div>
