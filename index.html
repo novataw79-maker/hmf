@@ -3654,6 +3654,12 @@
             display: block;
         }
 
+        /* Demo showcase override - force display */
+        .demo-showcase .main-content,
+        #demo-main-content {
+            display: block !important;
+        }
+
         .auth-container.hidden {
             display: none;
         }
@@ -4031,6 +4037,285 @@
             font-size: 15px;
             color: var(--neutral-500);
             line-height: 1.6;
+        }
+
+        /* Demo Section Styles */
+        .demo-section {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            padding: var(--spacing-3xl) var(--spacing-lg);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .demo-container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .demo-header {
+            text-align: center;
+            margin-bottom: var(--spacing-3xl);
+        }
+
+        .demo-title {
+            font-size: 42px;
+            font-weight: 700;
+            color: var(--neutral-900);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .demo-subtitle {
+            font-size: 18px;
+            color: var(--neutral-600);
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        .demo-showcase {
+            background: var(--white);
+            border-radius: var(--radius-xl);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+            position: relative;
+            min-height: 600px;
+            max-height: 650px;
+            margin-bottom: var(--spacing-2xl);
+        }
+
+        /* Use actual dashboard classes but make non-clickable */
+        .demo-showcase .top-nav,
+        .demo-showcase .hero-section,
+        .demo-showcase .main-container,
+        .demo-showcase .category-grid,
+        .demo-showcase .category-card,
+        .demo-showcase .hero-search-wrapper,
+        .demo-showcase .search-wrapper,
+        .demo-showcase .nav-link,
+        .demo-showcase .user-menu {
+            pointer-events: none;
+            cursor: default;
+        }
+
+        .demo-showcase .top-nav {
+            position: relative;
+            z-index: 10;
+        }
+
+        /* Override main-content hidden state for demo */
+        .demo-showcase .main-content {
+            display: block !important;
+            position: relative;
+        }
+
+        .demo-showcase .screen {
+            display: block !important;
+            opacity: 1 !important;
+        }
+
+        /* Ensure demo showcase has proper height */
+        .demo-showcase {
+            min-height: 600px;
+            max-height: 650px;
+            overflow-y: auto;
+        }
+
+        /* Make sure hero section is visible in demo */
+        .demo-showcase .hero-section {
+            position: relative;
+            background-image: linear-gradient(135deg, rgba(165, 59, 43, 0.85) 0%, rgba(220, 38, 38, 0.8) 100%), url('images/bird-s-eye-view-shanghai.png');
+            background-size: cover;
+            background-position: center;
+            padding: var(--spacing-xl) var(--spacing-lg);
+        }
+
+        /* Scale down content inside demo */
+        .demo-showcase .hero-title {
+            font-size: clamp(1.5rem, 4vw, 2.5rem) !important;
+        }
+
+        .demo-showcase .hero-subtitle {
+            font-size: clamp(0.875rem, 2vw, 1.125rem) !important;
+            margin-bottom: var(--spacing-lg) !important;
+        }
+
+        .demo-showcase .section-title {
+            font-size: 24px !important;
+        }
+
+        .demo-showcase .section-subtitle {
+            font-size: 14px !important;
+        }
+
+        .demo-showcase .category-grid {
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)) !important;
+            gap: var(--spacing-md) !important;
+        }
+
+        .demo-showcase .category-card {
+            padding: var(--spacing-md) !important;
+        }
+
+        .demo-showcase .category-icon-wrapper {
+            width: 56px !important;
+            height: 56px !important;
+        }
+
+        .demo-showcase .category-label {
+            font-size: 16px !important;
+        }
+
+        .demo-showcase .category-description {
+            font-size: 12px !important;
+        }
+
+        .demo-showcase .nav-container {
+            padding: 0 var(--spacing-md) !important;
+            height: 60px !important;
+        }
+
+        .demo-showcase .logo {
+            font-size: 22px !important;
+        }
+
+        .demo-showcase .main-container {
+            padding: var(--spacing-xl) var(--spacing-lg) !important;
+        }
+
+        /* Demo Tour Overlay (like the tour system) */
+        .demo-tour-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity var(--duration-normal);
+        }
+
+        .demo-tour-overlay.active {
+            opacity: 1;
+            pointer-events: all;
+        }
+
+        .demo-tour-spotlight {
+            position: absolute;
+            border-radius: var(--radius-lg);
+            border: 3px solid var(--primary-500);
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.6),
+                        0 0 30px rgba(165, 59, 43, 0.5);
+            z-index: 1001;
+            transition: all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+            pointer-events: none;
+        }
+
+        .demo-tour-pointer {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            z-index: 1002;
+            pointer-events: none;
+            transition: all 0.8s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .demo-tour-pointer::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border: 4px solid var(--primary-500);
+            border-radius: 50%;
+            animation: demoPointerPulse 2s ease-in-out infinite;
+        }
+
+        .demo-tour-pointer::after {
+            content: '👆';
+            position: absolute;
+            font-size: 32px;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            animation: demoPointerBounce 1.5s ease-in-out infinite;
+        }
+
+        @keyframes demoPointerPulse {
+            0%, 100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            50% {
+                transform: scale(1.3);
+                opacity: 0.5;
+            }
+        }
+
+        @keyframes demoPointerBounce {
+            0%, 100% {
+                transform: translate(-50%, -50%) translateY(0);
+            }
+            50% {
+                transform: translate(-50%, -50%) translateY(-10px);
+            }
+        }
+
+        .demo-tour-dialogue {
+            position: absolute;
+            background: white;
+            border-radius: var(--radius-xl);
+            padding: var(--spacing-xl);
+            max-width: 350px;
+            box-shadow: var(--shadow-2xl);
+            z-index: 1003;
+            opacity: 0;
+            transform: scale(0.9);
+            transition: all var(--duration-normal);
+        }
+
+        .demo-tour-dialogue.active {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .demo-tour-dialogue-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--neutral-900);
+            margin-bottom: var(--spacing-sm);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+
+        .demo-tour-dialogue-content {
+            font-size: 14px;
+            color: var(--neutral-600);
+            line-height: 1.6;
+        }
+
+        @media (max-width: 768px) {
+            .demo-showcase {
+                min-height: 600px;
+            }
+
+            .demo-dashboard {
+                min-height: 600px;
+            }
+
+            .demo-nav-search,
+            .demo-nav-right .demo-nav-link {
+                display: none;
+            }
+
+            .demo-title {
+                font-size: 32px;
+            }
+
+            .demo-category-grid {
+                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+                gap: var(--spacing-md);
+            }
         }
 
         .stats-section {
@@ -8020,6 +8305,9 @@
                     <button class="btn btn-ghost" onclick="scrollToSection('how-it-works')" style="padding: var(--spacing-md) var(--spacing-2xl); font-size: 18px;">
                         Learn More
                     </button>
+                    <button class="btn btn-ghost" onclick="showTour()" style="padding: var(--spacing-md) var(--spacing-2xl); font-size: 18px; display: inline-flex; align-items: center; gap: 8px;">
+                        <span>🎯</span> Take Interactive Tour
+                    </button>
                 </div>
             </div>
         </section>
@@ -8097,6 +8385,97 @@
                         <p class="feature-desc">
                             From plumbing to electrical, cleaning to repairs - find professionals for every home service need
                         </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Demo Section -->
+        <section class="demo-section" id="demo">
+            <div class="demo-container">
+                <div class="demo-header">
+                    <h2 class="demo-title">See HomeFix in Action</h2>
+                    <p class="demo-subtitle">
+                        Explore our platform with an interactive preview of the dashboard and key features
+                    </p>
+                </div>
+                <div class="demo-showcase">
+                    <!-- Demo Tour Overlay -->
+                    <div class="demo-tour-overlay" id="demo-tour-overlay"></div>
+                    <div class="demo-tour-spotlight" id="demo-tour-spotlight"></div>
+                    <div class="demo-tour-pointer" id="demo-tour-pointer"></div>
+                    <div class="demo-tour-dialogue" id="demo-tour-dialogue">
+                        <div class="demo-tour-dialogue-title" id="demo-tour-title">🔍 Search for Services</div>
+                        <div class="demo-tour-dialogue-content" id="demo-tour-content">Use the search bar to quickly find the home service you need.</div>
+                    </div>
+
+                    <!-- Actual Dashboard Preview - Using real dashboard structure -->
+                    <div class="main-content" id="demo-main-content">
+                        <!-- Top Navigation Bar -->
+                        <nav class="top-nav">
+                            <div class="nav-container">
+                                <div class="logo-section">
+                                    <div class="logo">
+                                        <img src="images/logo.png" alt="HomeFix Logo" style="width: 40px; height: 40px; display: block;">
+                                        <span>HomeFix</span>
+                                    </div>
+                                    <div class="location-badge">
+                                        <div class="status-indicator"></div>
+                                        <span>Accra, Ghana</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="nav-search">
+                                    <div class="search-wrapper" id="demo-nav-search">
+                                        <input type="text" class="search-input" placeholder="Search for services..." readonly>
+                                        <button class="search-btn">
+                                            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div class="nav-right">
+                                    <a href="#" class="nav-link nav-link-highlight" id="demo-tasks-link">My Tasks</a>
+                                    <div class="user-menu">
+                                        <img src="images/person.png" alt="User" class="user-avatar">
+                                    </div>
+                                </div>
+                            </div>
+                        </nav>
+
+                        <!-- Home Screen -->
+                        <div class="screen active">
+                            <!-- Hero Section -->
+                            <div class="hero-section">
+                                <div class="hero-container">
+                                    <h1 class="hero-title">Find the perfect home service professional</h1>
+                                    <p class="hero-subtitle">Get quality services delivered on time, every time</p>
+                                    <div class="hero-search">
+                                        <div class="hero-search-wrapper" id="demo-hero-search">
+                                            <input type="text" class="hero-search-input" placeholder="What service do you need?" readonly>
+                                            <button class="hero-search-btn">Search</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="main-container">
+                                <!-- Categories Section -->
+                                <div class="categories-section">
+                                    <div class="section-header">
+                                        <div>
+                                            <div class="section-title">Professional Services</div>
+                                            <div class="section-subtitle">Browse our wide range of home services</div>
+                                        </div>
+                                    </div>
+                                    <div class="category-grid" id="demo-category-grid">
+                                        <!-- Categories populated by JavaScript -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -15287,6 +15666,34 @@
                 icon: '📋'
             },
             {
+                target: '#features .feature-card:nth-child(1)',
+                title: '✅ Verified Professionals',
+                content: 'All service providers are thoroughly vetted and verified to ensure quality and reliability. We check credentials, licenses, and background before approval.',
+                position: 'bottom',
+                icon: '✅'
+            },
+            {
+                target: '#features .feature-card:nth-child(2)',
+                title: '💰 Fair & Transparent Pricing',
+                content: 'Get upfront quotes with no hidden fees. Compare prices and choose what works for your budget. No surprises, just honest pricing.',
+                position: 'bottom',
+                icon: '💰'
+            },
+            {
+                target: '#features .feature-card:nth-child(3)',
+                title: '⚡ Quick & Reliable Service',
+                content: 'Book services in minutes and get work done on time. Our professionals are committed to meeting deadlines and delivering quality work.',
+                position: 'bottom',
+                icon: '⚡'
+            },
+            {
+                target: '#features .feature-card:nth-child(4)',
+                title: '🛡️ Satisfaction Guaranteed',
+                content: 'We stand behind every job. If you\'re not happy, we\'ll make it right or refund your money. Your satisfaction is our priority.',
+                position: 'bottom',
+                icon: '🛡️'
+            },
+            {
                 target: '.nav-link-highlight',
                 title: '📝 My Tasks',
                 content: 'Track all your service requests here. View current tasks, past services, and manage your bookings. You\'ll receive updates when providers are assigned.',
@@ -15386,24 +15793,27 @@
             spotlight.style.width = (rect.width + padding * 2) + 'px';
             spotlight.style.height = (rect.height + padding * 2) + 'px';
 
-            // Position pointer
+            // Position pointer - improved accuracy to point closer to element
             const pointer = document.getElementById('tour-pointer');
             let pointerX, pointerY;
+            const pointerSize = 60; // Pointer size in pixels
+            const pointerOffset = 10; // Closer offset for better pointing
             
             if (step.position === 'top') {
-                pointerX = rect.left + rect.width / 2;
-                pointerY = rect.top - 40;
+                pointerX = rect.left + rect.width / 2 - pointerSize / 2;
+                pointerY = rect.top - pointerSize - pointerOffset;
             } else if (step.position === 'bottom') {
-                pointerX = rect.left + rect.width / 2;
-                pointerY = rect.bottom + 40;
+                pointerX = rect.left + rect.width / 2 - pointerSize / 2;
+                pointerY = rect.bottom + pointerOffset;
             } else if (step.position === 'left') {
-                pointerX = rect.left - 40;
-                pointerY = rect.top + rect.height / 2;
+                pointerX = rect.left - pointerSize - pointerOffset;
+                pointerY = rect.top + rect.height / 2 - pointerSize / 2;
             } else { // right
-                pointerX = rect.right + 40;
-                pointerY = rect.top + rect.height / 2;
+                pointerX = rect.right + pointerOffset;
+                pointerY = rect.top + rect.height / 2 - pointerSize / 2;
             }
 
+            // Account for pointer size to center it properly
             pointer.style.left = (pointerX + scrollX) + 'px';
             pointer.style.top = (pointerY + scrollY) + 'px';
 
@@ -15437,13 +15847,67 @@
             dialogue.style.left = dialogueX + 'px';
             dialogue.style.top = dialogueY + 'px';
 
-            // Animate dialogue in
-            setTimeout(() => {
-                dialogue.classList.add('active');
-            }, 100);
-
-            // Scroll to element if needed
+            // Scroll to element if needed first, then update positions
             targetElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            
+            // Wait for scroll to complete, then recalculate positions
+            setTimeout(() => {
+                const updatedRect = targetElement.getBoundingClientRect();
+                const updatedScrollX = window.pageXOffset || document.documentElement.scrollLeft;
+                const updatedScrollY = window.pageYOffset || document.documentElement.scrollTop;
+                
+                // Update spotlight position after scroll
+                spotlight.style.left = (updatedRect.left + updatedScrollX - padding) + 'px';
+                spotlight.style.top = (updatedRect.top + updatedScrollY - padding) + 'px';
+                spotlight.style.width = (updatedRect.width + padding * 2) + 'px';
+                spotlight.style.height = (updatedRect.height + padding * 2) + 'px';
+                
+                // Update pointer position after scroll
+                const pointerOffset = 10; // Closer offset for better pointing
+                let updatedPointerX, updatedPointerY;
+                if (step.position === 'top') {
+                    updatedPointerX = updatedRect.left + updatedRect.width / 2 - pointerSize / 2;
+                    updatedPointerY = updatedRect.top - pointerSize - pointerOffset;
+                } else if (step.position === 'bottom') {
+                    updatedPointerX = updatedRect.left + updatedRect.width / 2 - pointerSize / 2;
+                    updatedPointerY = updatedRect.bottom + pointerOffset;
+                } else if (step.position === 'left') {
+                    updatedPointerX = updatedRect.left - pointerSize - pointerOffset;
+                    updatedPointerY = updatedRect.top + updatedRect.height / 2 - pointerSize / 2;
+                } else {
+                    updatedPointerX = updatedRect.right + pointerOffset;
+                    updatedPointerY = updatedRect.top + updatedRect.height / 2 - pointerSize / 2;
+                }
+                
+                pointer.style.left = (updatedPointerX + updatedScrollX) + 'px';
+                pointer.style.top = (updatedPointerY + updatedScrollY) + 'px';
+                
+                // Update dialogue position after scroll
+                let updatedDialogueX, updatedDialogueY;
+                if (step.position === 'top') {
+                    updatedDialogueX = updatedRect.left + updatedRect.width / 2 - dialogueWidth / 2;
+                    updatedDialogueY = updatedRect.top - dialogueHeight - 80;
+                } else if (step.position === 'bottom') {
+                    updatedDialogueX = updatedRect.left + updatedRect.width / 2 - dialogueWidth / 2;
+                    updatedDialogueY = updatedRect.bottom + 80;
+                } else {
+                    if (updatedRect.left > window.innerWidth / 2) {
+                        updatedDialogueX = updatedRect.left - dialogueWidth - 40;
+                    } else {
+                        updatedDialogueX = updatedRect.right + 40;
+                    }
+                    updatedDialogueY = updatedRect.top + updatedRect.height / 2 - dialogueHeight / 2;
+                }
+                
+                updatedDialogueX = Math.max(20, Math.min(updatedDialogueX, window.innerWidth - dialogueWidth - 20));
+                updatedDialogueY = Math.max(20, Math.min(updatedDialogueY, window.innerHeight - dialogueHeight - 20));
+                
+                dialogue.style.left = updatedDialogueX + 'px';
+                dialogue.style.top = updatedDialogueY + 'px';
+                
+                // Animate dialogue in after positioning is complete
+                dialogue.classList.add('active');
+            }, 500);
         }
 
         function updateTourProgress() {
@@ -15495,7 +15959,209 @@
         function showTour() {
             // Clear tour completion status to allow restart
             sessionStorage.removeItem('homefix_tour_completed');
+            sessionStorage.removeItem('homefix_tour_shown');
             startTour();
+        }
+
+        // Demo Section Tour-Style Animation
+        let currentDemoStep = 0;
+        let demoAutoAdvanceInterval = null;
+
+        const demoSteps = [
+            {
+                target: '#demo-hero-search',
+                title: '🔍 Smart Search',
+                content: 'Use the powerful search bar to quickly find the home service you need. Type keywords like "plumbing", "electrical", or "cleaning".',
+                position: 'bottom'
+            },
+            {
+                target: '#demo-nav-search',
+                title: '📋 Navigation Search',
+                content: 'Search from anywhere on the platform using the navigation bar. Quick access to all services at your fingertips.',
+                position: 'bottom'
+            },
+            {
+                target: '#demo-category-grid',
+                title: '📂 Browse Categories',
+                content: 'Explore our wide range of professional services. Click on any category to view details and book verified professionals.',
+                position: 'top'
+            },
+            {
+                target: '#demo-tasks-link',
+                title: '📝 My Tasks',
+                content: 'Track all your service requests here. View current tasks, past services, and manage your bookings in one place.',
+                position: 'bottom'
+            }
+        ];
+
+        function renderDemoCategories() {
+            const grid = document.getElementById('demo-category-grid');
+            if (!grid) return;
+            
+            // Use first 6 categories for demo
+            const demoCategories = serviceCategories.slice(0, 6);
+            grid.innerHTML = demoCategories.map(cat => `
+                <a href="#" class="category-card">
+                    <div class="category-icon-wrapper">
+                        <img src="${cat.image}" alt="${cat.label}" class="category-icon-image">
+                    </div>
+                    <div class="category-label">${cat.label}</div>
+                    <div class="category-description">${cat.description}</div>
+                </a>
+            `).join('');
+        }
+
+        function showDemoStep(stepIndex) {
+            if (stepIndex < 0 || stepIndex >= demoSteps.length) {
+                // Loop back to start
+                stepIndex = 0;
+            }
+
+            currentDemoStep = stepIndex;
+            const step = demoSteps[stepIndex];
+            const targetElement = document.querySelector(step.target);
+
+            if (!targetElement) {
+                // If element not found, move to next step after delay
+                setTimeout(() => showDemoStep(stepIndex + 1), 200);
+                return;
+            }
+
+            // Update dialogue content
+            document.getElementById('demo-tour-title').textContent = step.title;
+            document.getElementById('demo-tour-content').textContent = step.content;
+
+            // Get element position relative to demo-showcase
+            const showcase = document.querySelector('.demo-showcase');
+            const showcaseRect = showcase.getBoundingClientRect();
+            const rect = targetElement.getBoundingClientRect();
+
+            // Calculate relative positions
+            const relativeLeft = rect.left - showcaseRect.left;
+            const relativeTop = rect.top - showcaseRect.top;
+
+            // Position spotlight
+            const spotlight = document.getElementById('demo-tour-spotlight');
+            const padding = 12;
+            spotlight.style.left = (relativeLeft - padding) + 'px';
+            spotlight.style.top = (relativeTop - padding) + 'px';
+            spotlight.style.width = (rect.width + padding * 2) + 'px';
+            spotlight.style.height = (rect.height + padding * 2) + 'px';
+
+            // Position pointer
+            const pointer = document.getElementById('demo-tour-pointer');
+            const pointerSize = 60;
+            let pointerX, pointerY;
+
+            if (step.position === 'top') {
+                pointerX = relativeLeft + rect.width / 2 - pointerSize / 2;
+                pointerY = relativeTop - pointerSize - 15;
+            } else if (step.position === 'bottom') {
+                pointerX = relativeLeft + rect.width / 2 - pointerSize / 2;
+                pointerY = relativeTop + rect.height + 15;
+            } else if (step.position === 'left') {
+                pointerX = relativeLeft - pointerSize - 15;
+                pointerY = relativeTop + rect.height / 2 - pointerSize / 2;
+            } else {
+                pointerX = relativeLeft + rect.width + 15;
+                pointerY = relativeTop + rect.height / 2 - pointerSize / 2;
+            }
+
+            pointer.style.left = pointerX + 'px';
+            pointer.style.top = pointerY + 'px';
+
+            // Position dialogue
+            const dialogue = document.getElementById('demo-tour-dialogue');
+            const dialogueWidth = 320;
+            const dialogueHeight = 120;
+            let dialogueX, dialogueY;
+
+            if (step.position === 'top') {
+                dialogueX = relativeLeft + rect.width / 2 - dialogueWidth / 2;
+                dialogueY = relativeTop - dialogueHeight - 80;
+            } else if (step.position === 'bottom') {
+                dialogueX = relativeLeft + rect.width / 2 - dialogueWidth / 2;
+                dialogueY = relativeTop + rect.height + 70;
+            } else {
+                if (relativeLeft > showcaseRect.width / 2) {
+                    dialogueX = relativeLeft - dialogueWidth - 30;
+                } else {
+                    dialogueX = relativeLeft + rect.width + 30;
+                }
+                dialogueY = relativeTop + rect.height / 2 - dialogueHeight / 2;
+            }
+
+            // Keep dialogue within showcase bounds
+            dialogueX = Math.max(20, Math.min(dialogueX, showcaseRect.width - dialogueWidth - 20));
+            dialogueY = Math.max(20, Math.min(dialogueY, showcaseRect.height - dialogueHeight - 20));
+
+            dialogue.style.left = dialogueX + 'px';
+            dialogue.style.top = dialogueY + 'px';
+
+            // Show overlay and dialogue
+            const overlay = document.getElementById('demo-tour-overlay');
+            overlay.classList.add('active');
+            dialogue.classList.add('active');
+
+            // Don't scroll - let user scroll naturally. Tour continues working in background.
+        }
+
+        function nextDemoStep() {
+            showDemoStep(currentDemoStep + 1);
+        }
+
+        function startDemoTour() {
+            // Clear any existing interval
+            if (demoAutoAdvanceInterval) {
+                clearInterval(demoAutoAdvanceInterval);
+            }
+
+            // Start the tour
+            showDemoStep(0);
+
+            // Auto-advance every 1.5 seconds
+            demoAutoAdvanceInterval = setInterval(() => {
+                nextDemoStep();
+            }, 1500);
+        }
+
+        function stopDemoTour() {
+            if (demoAutoAdvanceInterval) {
+                clearInterval(demoAutoAdvanceInterval);
+                demoAutoAdvanceInterval = null;
+            }
+            const overlay = document.getElementById('demo-tour-overlay');
+            overlay.classList.remove('active');
+            document.getElementById('demo-tour-dialogue').classList.remove('active');
+        }
+
+        // Initialize demo section
+        function initDemoSection() {
+            const showcase = document.querySelector('.demo-showcase');
+            if (!showcase) return;
+
+            // Render categories
+            renderDemoCategories();
+
+            // Start tour automatically after a short delay
+            setTimeout(() => {
+                startDemoTour();
+            }, 1000);
+
+            // Pause on hover, resume on leave
+            showcase.addEventListener('mouseenter', stopDemoTour);
+            showcase.addEventListener('mouseleave', () => {
+                setTimeout(() => {
+                    startDemoTour();
+                }, 500);
+            });
+        }
+
+        // Initialize when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', initDemoSection);
+        } else {
+            initDemoSection();
         }
 
         // Email Verification Handler
