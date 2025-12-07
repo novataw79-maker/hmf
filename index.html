@@ -2,7 +2,11 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="theme-color" content="#A53B2B">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -690,6 +694,323 @@
             }
         }
 
+        /* ============================================
+           MOBILE-FIRST OPTIMIZATIONS
+           ============================================ */
+        
+        /* Touch-friendly targets (minimum 44x44px) */
+        @media (max-width: 768px) {
+            /* Base mobile styles */
+            body {
+                font-size: 16px; /* Prevents zoom on iOS */
+            }
+
+            /* Touch-friendly buttons */
+            .btn, button, .nav-link, .category-card, .leaderboard-item {
+                min-height: 44px;
+                min-width: 44px;
+                padding: var(--spacing-md) var(--spacing-lg);
+            }
+
+            /* Mobile navigation */
+            .top-nav {
+                padding: var(--spacing-sm) var(--spacing-md);
+            }
+
+            .nav-container {
+                flex-wrap: wrap;
+                gap: var(--spacing-sm);
+            }
+
+            .logo-section {
+                flex: 1;
+                min-width: 0;
+            }
+
+            .nav-search {
+                order: 3;
+                width: 100%;
+                margin: var(--spacing-sm) 0 0 0;
+                max-width: 100%;
+            }
+
+            .nav-right {
+                gap: var(--spacing-sm);
+                flex-wrap: wrap;
+            }
+
+            .nav-link {
+                font-size: 14px;
+                padding: var(--spacing-sm) var(--spacing-md);
+            }
+
+            /* Mobile-optimized cards */
+            .task-card, .category-card, .profile-card {
+                padding: var(--spacing-md);
+                margin-bottom: var(--spacing-md);
+            }
+
+            /* Mobile forms */
+            .form-input, .form-textarea, .search-input, .feedback-textarea {
+                font-size: 16px; /* Prevents zoom on iOS */
+                padding: var(--spacing-md);
+                min-height: 44px;
+            }
+
+            /* Mobile leaderboard */
+            .leaderboard-panel {
+                width: calc(100vw - 24px);
+                right: var(--spacing-sm);
+                left: var(--spacing-sm);
+                top: 70px;
+                max-height: calc(100vh - 100px);
+            }
+
+            .leaderboard-controls {
+                padding: var(--spacing-sm);
+            }
+
+            .leaderboard-filters {
+                flex-direction: column;
+            }
+
+            .leaderboard-filter-select {
+                width: 100%;
+            }
+
+            .leaderboard-item {
+                padding: var(--spacing-sm);
+                gap: var(--spacing-sm);
+                flex-wrap: wrap;
+            }
+
+            .leaderboard-rank {
+                font-size: 20px;
+                min-width: 32px;
+            }
+
+            .leaderboard-avatar {
+                width: 40px;
+                height: 40px;
+            }
+
+            .leaderboard-name {
+                font-size: 14px;
+            }
+
+            .leaderboard-tasks {
+                font-size: 18px;
+                min-width: 60px;
+                text-align: center;
+                width: 100%;
+                margin-top: var(--spacing-xs);
+            }
+
+            /* Mobile rating stars */
+            .rating-star {
+                font-size: 32px;
+                padding: var(--spacing-xs);
+                min-width: 44px;
+                min-height: 44px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+
+            /* Mobile photo upload */
+            .photo-upload-label {
+                padding: var(--spacing-lg);
+                font-size: 16px;
+            }
+
+            .photo-preview-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            /* Mobile modals */
+            .modal-content {
+                width: calc(100vw - 32px);
+                max-width: calc(100vw - 32px);
+                padding: var(--spacing-lg);
+                max-height: 90vh;
+            }
+
+            .calendar-grid {
+                gap: 4px;
+            }
+
+            .calendar-day {
+                font-size: 14px;
+                min-height: 44px;
+            }
+
+            /* Mobile provider profile */
+            .profile-info-card {
+                padding: var(--spacing-lg) !important;
+            }
+
+            .profile-avatar {
+                width: 100px !important;
+                height: 100px !important;
+            }
+
+            /* Mobile buttons - full width on small screens */
+            .btn {
+                width: 100%;
+                margin-bottom: var(--spacing-sm);
+            }
+
+            .btn-group {
+                flex-direction: column;
+            }
+
+            /* Mobile task cards */
+            .task-card-header, .task-card-body, .task-card-footer {
+                padding: var(--spacing-md);
+            }
+
+            /* Mobile hero section */
+            .hero-title {
+                font-size: 28px;
+                line-height: 1.2;
+            }
+
+            .hero-subtitle {
+                font-size: 16px;
+            }
+
+            .hero-search-wrapper {
+                flex-direction: column;
+                gap: var(--spacing-sm);
+            }
+
+            .hero-search-input {
+                width: 100%;
+                font-size: 16px;
+            }
+
+            .hero-search-btn {
+                width: 100%;
+                padding: var(--spacing-md);
+            }
+
+            /* Mobile category grid */
+            .category-grid {
+                grid-template-columns: repeat(2, 1fr);
+                gap: var(--spacing-md);
+            }
+
+            /* Mobile spacing adjustments */
+            .main-container {
+                padding: var(--spacing-md);
+            }
+
+            .section-header {
+                margin-bottom: var(--spacing-lg);
+            }
+
+            .section-title {
+                font-size: 24px;
+            }
+
+            /* Mobile notifications */
+            .notification-toast {
+                left: var(--spacing-md);
+                right: var(--spacing-md);
+                width: auto;
+                max-width: none;
+            }
+        }
+
+        @media (max-width: 480px) {
+            /* Extra small devices */
+            .leaderboard-toggle {
+                font-size: 11px;
+                padding: 4px 8px;
+            }
+
+            .category-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .hero-title {
+                font-size: 24px;
+            }
+
+            .profile-name {
+                font-size: 20px !important;
+            }
+
+            .task-card-title {
+                font-size: 18px;
+            }
+
+            /* Stack buttons vertically */
+            .task-card-footer {
+                flex-direction: column;
+            }
+
+            .task-card-footer .btn {
+                width: 100%;
+            }
+        }
+
+        /* Touch optimizations */
+        @media (hover: none) and (pointer: coarse) {
+            /* Touch device specific styles */
+            * {
+                -webkit-tap-highlight-color: rgba(165, 59, 43, 0.1);
+            }
+
+            .btn, button, .nav-link, .category-card {
+                -webkit-tap-highlight-color: transparent;
+            }
+
+            .btn:active, button:active {
+                transform: scale(0.98);
+                opacity: 0.9;
+            }
+
+            /* Larger touch targets */
+            .rating-star {
+                min-width: 48px;
+                min-height: 48px;
+            }
+
+            /* Prevent text selection on buttons */
+            .btn, button, .nav-link {
+                user-select: none;
+                -webkit-user-select: none;
+            }
+        }
+
+        /* Landscape mobile optimizations */
+        @media (max-width: 768px) and (orientation: landscape) {
+            .leaderboard-panel {
+                max-height: calc(100vh - 80px);
+            }
+
+            .modal-content {
+                max-height: 85vh;
+            }
+        }
+
+        /* Safe area insets for notched devices */
+        @supports (padding: max(0px)) {
+            .top-nav {
+                padding-top: max(var(--spacing-md), env(safe-area-inset-top));
+            }
+
+            .main-container {
+                padding-left: max(var(--spacing-md), env(safe-area-inset-left));
+                padding-right: max(var(--spacing-md), env(safe-area-inset-right));
+            }
+
+            .floating-chat-button {
+                bottom: max(20px, env(safe-area-inset-bottom));
+            }
+        }
+
         .location-badge {
             display: flex;
             align-items: center;
@@ -706,6 +1027,443 @@
             height: 8px;
             background: var(--success-500);
             border-radius: 50%;
+        }
+
+        /* Leaderboard Styles */
+        .leaderboard-toggle {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+            padding: var(--spacing-xs) var(--spacing-sm);
+            background: var(--neutral-50);
+            border-radius: var(--radius-full);
+            font-size: 12px;
+            color: var(--neutral-700);
+            cursor: pointer;
+            transition: all var(--duration-normal) var(--ease-smooth);
+            position: relative;
+        }
+
+        .leaderboard-toggle:hover {
+            background: var(--primary-50);
+            color: var(--primary-600);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .leaderboard-panel {
+            position: fixed;
+            top: 80px;
+            right: var(--spacing-lg);
+            width: 420px;
+            max-height: 600px;
+            background: var(--white);
+            border-radius: var(--radius-xl);
+            box-shadow: var(--shadow-2xl);
+            z-index: var(--z-modal);
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+            animation: slideDown var(--duration-normal) var(--ease-out);
+        }
+
+        .leaderboard-panel.active {
+            display: flex;
+        }
+
+        .leaderboard-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: var(--spacing-lg);
+            border-bottom: 1px solid var(--neutral-200);
+            background: var(--gradient-primary);
+            color: var(--white);
+        }
+
+        .leaderboard-header h3 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--white);
+        }
+
+        .leaderboard-close {
+            background: none;
+            border: none;
+            color: var(--white);
+            font-size: 24px;
+            cursor: pointer;
+            padding: 0;
+            width: 28px;
+            height: 28px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--radius-md);
+            transition: all var(--duration-normal) var(--ease-smooth);
+        }
+
+        .leaderboard-close:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .leaderboard-content {
+            padding: var(--spacing-md);
+            overflow-y: auto;
+            max-height: 500px;
+        }
+
+        .leaderboard-item {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+            padding: var(--spacing-md);
+            border-radius: var(--radius-lg);
+            margin-bottom: var(--spacing-sm);
+            background: var(--neutral-50);
+            transition: all var(--duration-normal) var(--ease-smooth);
+            border: 1px solid var(--neutral-200);
+        }
+
+        .leaderboard-item:hover {
+            background: var(--white);
+            box-shadow: var(--shadow-md);
+            transform: translateX(4px);
+        }
+
+        .leaderboard-rank {
+            font-size: 24px;
+            font-weight: 800;
+            color: var(--primary-500);
+            min-width: 40px;
+            text-align: center;
+        }
+
+        .leaderboard-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            object-fit: cover;
+            background: var(--neutral-200);
+            border: 2px solid var(--neutral-300);
+        }
+
+        .leaderboard-info {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .leaderboard-name {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--neutral-900);
+            margin-bottom: var(--spacing-xs);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .leaderboard-details {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .leaderboard-detail-item {
+            font-size: 12px;
+            color: var(--neutral-600);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+        }
+
+        .leaderboard-tasks {
+            font-size: 20px;
+            font-weight: 800;
+            color: var(--primary-600);
+            min-width: 80px;
+            text-align: right;
+        }
+
+        .leaderboard-controls {
+            padding: var(--spacing-md);
+            border-bottom: 1px solid var(--neutral-200);
+            background: var(--neutral-50);
+        }
+
+        .leaderboard-search-wrapper {
+            position: relative;
+            margin-bottom: var(--spacing-md);
+        }
+
+        .leaderboard-search {
+            width: 100%;
+            padding: var(--spacing-sm) var(--spacing-md) var(--spacing-sm) 36px;
+            border: 1px solid var(--neutral-300);
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            background: var(--white);
+        }
+
+        .leaderboard-search-wrapper svg {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+        }
+
+        .leaderboard-filters {
+            display: flex;
+            gap: var(--spacing-sm);
+            flex-wrap: wrap;
+        }
+
+        .leaderboard-filter-select {
+            flex: 1;
+            min-width: 120px;
+            padding: var(--spacing-sm) var(--spacing-md);
+            border: 1px solid var(--neutral-300);
+            border-radius: var(--radius-md);
+            font-size: 13px;
+            background: var(--white);
+            color: var(--neutral-700);
+            cursor: pointer;
+        }
+
+        .leaderboard-footer {
+            padding: var(--spacing-md);
+            border-top: 1px solid var(--neutral-200);
+            text-align: center;
+            background: var(--neutral-50);
+        }
+
+        .leaderboard-item {
+            cursor: pointer;
+        }
+
+        .leaderboard-item:hover {
+            background: var(--primary-50);
+            border-color: var(--primary-200);
+        }
+
+        .provider-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: var(--radius-sm);
+            font-size: 10px;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-left: var(--spacing-xs);
+        }
+
+        .badge-top {
+            background: var(--warning-500);
+            color: var(--white);
+        }
+
+        .badge-verified {
+            background: var(--success-500);
+            color: var(--white);
+        }
+
+        .badge-new {
+            background: var(--primary-500);
+            color: var(--white);
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(4px);
+            z-index: var(--z-modal);
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn var(--duration-normal) var(--ease-out);
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: var(--white);
+            border-radius: var(--radius-xl);
+            padding: var(--spacing-xl);
+            max-width: 90vw;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: var(--shadow-2xl);
+            animation: scaleIn var(--duration-normal) var(--ease-bounce);
+            position: relative;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-lg);
+            padding-bottom: var(--spacing-md);
+            border-bottom: 1px solid var(--neutral-200);
+        }
+
+        .modal-header h2 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 700;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 28px;
+            color: var(--neutral-500);
+            cursor: pointer;
+            padding: 0;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--radius-md);
+            transition: all var(--duration-normal) var(--ease-smooth);
+        }
+
+        .modal-close:hover {
+            background: var(--neutral-100);
+            color: var(--neutral-900);
+        }
+
+        .modal-body {
+            padding: var(--spacing-md) 0;
+        }
+
+        /* Calendar Styles */
+        .calendar-container {
+            width: 100%;
+        }
+
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-lg);
+        }
+
+        .calendar-nav-btn {
+            background: var(--neutral-100);
+            border: none;
+            padding: var(--spacing-sm) var(--spacing-md);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            font-size: 18px;
+            transition: all var(--duration-normal) var(--ease-smooth);
+        }
+
+        .calendar-nav-btn:hover {
+            background: var(--neutral-200);
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: var(--spacing-xs);
+        }
+
+        .calendar-day-header {
+            text-align: center;
+            font-weight: 600;
+            font-size: 12px;
+            color: var(--neutral-600);
+            padding: var(--spacing-sm);
+        }
+
+        .calendar-day {
+            aspect-ratio: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all var(--duration-normal) var(--ease-smooth);
+            font-size: 14px;
+        }
+
+        .calendar-day:hover:not(.disabled):not(.selected) {
+            background: var(--neutral-100);
+        }
+
+        .calendar-day.disabled {
+            color: var(--neutral-300);
+            cursor: not-allowed;
+        }
+
+        .calendar-day.selected {
+            background: var(--primary-500);
+            color: var(--white);
+            font-weight: 600;
+        }
+
+        .calendar-day.today {
+            border: 2px solid var(--primary-500);
+        }
+
+        .calendar-day.available {
+            background: var(--success-50);
+            color: var(--success-600);
+        }
+
+        @media (max-width: 768px) {
+            .leaderboard-panel {
+                width: calc(100vw - 32px);
+                right: var(--spacing-md);
+                left: var(--spacing-md);
+                max-height: 70vh;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .leaderboard-toggle {
+                font-size: 11px;
+                padding: 4px 8px;
+            }
+
+            .leaderboard-panel {
+                width: calc(100vw - 24px);
+                right: var(--spacing-sm);
+                left: var(--spacing-sm);
+                top: 70px;
+            }
+
+            .leaderboard-item {
+                padding: var(--spacing-sm);
+                gap: var(--spacing-sm);
+            }
+
+            .leaderboard-rank {
+                font-size: 20px;
+                min-width: 32px;
+            }
+
+            .leaderboard-avatar {
+                width: 40px;
+                height: 40px;
+            }
+
+            .leaderboard-name {
+                font-size: 14px;
+            }
+
+            .leaderboard-tasks {
+                font-size: 18px;
+                min-width: 60px;
+            }
         }
 
         .nav-search {
@@ -7139,6 +7897,7 @@
         // Initialize Firebase services
         const auth = firebase.auth();
         const db = firebase.firestore();
+        const storage = firebase.storage ? firebase.storage() : null;
         
         // Check if Firebase is properly initialized
         if (!firebaseInitialized) {
@@ -7971,7 +8730,7 @@
 
         // Firestore Service - Provider Ratings
         const firebaseProviderRatings = {
-            async submitRating(requestId, rating, feedback, providerData) {
+            async submitRating(requestId, rating, feedback, providerData, photos = []) {
                 try {
                     const currentUser = firebaseAuth.getCurrentUser();
                     if (!currentUser) {
@@ -8053,15 +8812,33 @@
                     }
 
                     // Get all individual ratings for this provider
-                    const ratingsSnapshot = await db.collection('provider_ratings')
-                        .where('providerEmail', '==', providerEmail)
-                        .where('providerPhone', '==', providerPhone)
-                        .orderBy('createdAt', 'desc')
-                        .get();
+                    // Try with orderBy first, fall back to client-side sorting if index doesn't exist
+                    let ratingsSnapshot;
+                    try {
+                        ratingsSnapshot = await db.collection('provider_ratings')
+                            .where('providerEmail', '==', providerEmail)
+                            .where('providerPhone', '==', providerPhone)
+                            .orderBy('createdAt', 'desc')
+                            .get();
+                    } catch (orderByError) {
+                        // If orderBy fails (no index), fetch without it and sort client-side
+                        console.warn('orderBy failed, fetching without orderBy:', orderByError);
+                        ratingsSnapshot = await db.collection('provider_ratings')
+                            .where('providerEmail', '==', providerEmail)
+                            .where('providerPhone', '==', providerPhone)
+                            .get();
+                    }
 
                     const ratings = [];
                     ratingsSnapshot.forEach(doc => {
                         ratings.push({ id: doc.id, ...doc.data() });
+                    });
+
+                    // Sort by date client-side if orderBy wasn't used
+                    ratings.sort((a, b) => {
+                        const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : (a.createdAt ? new Date(a.createdAt) : new Date(0));
+                        const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : (b.createdAt ? new Date(b.createdAt) : new Date(0));
+                        return dateB - dateA; // Newest first
                     });
 
                     return {
@@ -8079,31 +8856,63 @@
 
             async getAllProviderRatings() {
                 try {
-                    const summarySnapshot = await db.collection('provider_ratings_summary')
-                        .orderBy('averageRating', 'desc')
-                        .get();
+                    // Get all provider summaries without orderBy to avoid index requirement
+                    const summarySnapshot = await db.collection('provider_ratings_summary').get();
 
                     const providers = [];
                     for (const doc of summarySnapshot.docs) {
                         const summary = doc.data();
-                        const ratingsSnapshot = await db.collection('provider_ratings')
-                            .where('providerEmail', '==', summary.providerEmail)
-                            .where('providerPhone', '==', summary.providerPhone)
-                            .orderBy('createdAt', 'desc')
-                            .limit(10)
-                            .get();
+                        
+                        // Get individual ratings without orderBy to avoid index requirement
+                        // We'll sort client-side instead
+                        let ratingsSnapshot;
+                        try {
+                            ratingsSnapshot = await db.collection('provider_ratings')
+                                .where('providerEmail', '==', summary.providerEmail)
+                                .where('providerPhone', '==', summary.providerPhone)
+                                .limit(50)
+                                .get();
+                        } catch (orderByError) {
+                            // If query with where clauses fails, try without them
+                            console.warn('Query with where clauses failed, fetching all ratings:', orderByError);
+                            const allRatingsSnapshot = await db.collection('provider_ratings').get();
+                            ratingsSnapshot = {
+                                docs: allRatingsSnapshot.docs.filter(ratingDoc => {
+                                    const ratingData = ratingDoc.data();
+                                    return ratingData.providerEmail === summary.providerEmail && 
+                                           ratingData.providerPhone === summary.providerPhone;
+                                })
+                            };
+                        }
 
                         const ratings = [];
                         ratingsSnapshot.forEach(ratingDoc => {
                             ratings.push({ id: ratingDoc.id, ...ratingDoc.data() });
                         });
 
+                        // Sort ratings by date client-side (newest first)
+                        ratings.sort((a, b) => {
+                            const dateA = a.createdAt?.toDate ? a.createdAt.toDate() : (a.createdAt ? new Date(a.createdAt) : new Date(0));
+                            const dateB = b.createdAt?.toDate ? b.createdAt.toDate() : (b.createdAt ? new Date(b.createdAt) : new Date(0));
+                            return dateB - dateA;
+                        });
+
+                        // Keep only the 10 most recent
+                        const recentRatings = ratings.slice(0, 10);
+
                         providers.push({
                             id: doc.id,
                             summary: summary,
-                            recentRatings: ratings
+                            recentRatings: recentRatings
                         });
                     }
+
+                    // Sort providers by average rating client-side (highest first)
+                    providers.sort((a, b) => {
+                        const ratingA = a.summary.averageRating || 0;
+                        const ratingB = b.summary.averageRating || 0;
+                        return ratingB - ratingA;
+                    });
 
                     return { success: true, data: providers };
                 } catch (error) {
@@ -8790,9 +9599,6 @@
                     <button class="btn btn-ghost" onclick="scrollToSection('how-it-works')" style="padding: var(--spacing-md) var(--spacing-2xl); font-size: 18px;">
                         Learn More
                     </button>
-                    <button class="btn btn-ghost" onclick="showTour()" style="padding: var(--spacing-md) var(--spacing-2xl); font-size: 18px; display: inline-flex; align-items: center; gap: 8px;">
-                        <span>🎯</span> Take Interactive Tour
-                    </button>
                 </div>
             </div>
         </section>
@@ -8904,9 +9710,11 @@
                                         <img src="images/logo.png" alt="HomeFix Logo" style="width: 40px; height: 40px; display: block;">
                                         <span>HomeFix</span>
                                     </div>
-                                    <div class="location-badge">
-                                        <div class="status-indicator"></div>
-                                        <span>Accra, Ghana</span>
+                                    <div class="leaderboard-toggle" style="pointer-events: none; opacity: 0.7;">
+                                        <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin-right: 4px;">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path>
+                                        </svg>
+                                        <span>Leaderboard</span>
                                     </div>
                                 </div>
                                 
@@ -9360,9 +10168,52 @@
                     </video>
                     <span>HomeFix</span>
                 </div>
-                <div class="location-badge">
-                    <div class="status-indicator"></div>
-                    <span>Accra, Ghana</span>
+                <div class="leaderboard-toggle" onclick="toggleLeaderboard()">
+                    <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin-right: 4px;">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"></path>
+                    </svg>
+                    <span>Leaderboard</span>
+                </div>
+                <div class="leaderboard-panel" id="leaderboard-panel">
+                    <div class="leaderboard-header">
+                        <h3>Top Service Providers</h3>
+                        <button class="leaderboard-close" onclick="toggleLeaderboard()">×</button>
+                    </div>
+                    <div class="leaderboard-controls">
+                        <div class="leaderboard-search-wrapper">
+                            <input type="text" id="leaderboard-search" class="leaderboard-search" placeholder="Search providers..." oninput="filterLeaderboard()">
+                            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="color: var(--neutral-400);">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                            </svg>
+                        </div>
+                        <div class="leaderboard-filters">
+                            <select id="leaderboard-service-filter" class="leaderboard-filter-select" onchange="filterLeaderboard()">
+                                <option value="">All Services</option>
+                                <option value="Plumbing">Plumbing</option>
+                                <option value="Electrical">Electrical</option>
+                                <option value="Carpentry">Carpentry</option>
+                                <option value="Painting">Painting</option>
+                                <option value="Cleaning">Cleaning</option>
+                                <option value="Gardening">Gardening</option>
+                            </select>
+                            <select id="leaderboard-sort" class="leaderboard-filter-select" onchange="filterLeaderboard()">
+                                <option value="tasks">Sort by Tasks</option>
+                                <option value="ratings">Sort by Ratings</option>
+                                <option value="name">Sort by Name</option>
+                            </select>
+                            <select id="leaderboard-time-filter" class="leaderboard-filter-select" onchange="filterLeaderboard()">
+                                <option value="all">All Time</option>
+                                <option value="month">This Month</option>
+                                <option value="week">This Week</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="leaderboard-content" id="leaderboard-content">
+                        <div style="text-align: center; padding: 20px; color: var(--neutral-500);">Loading leaderboard...</div>
+                    </div>
+                    <div class="leaderboard-footer" id="leaderboard-footer" style="display: none;">
+                        <button class="btn btn-ghost" id="load-more-leaderboard" onclick="loadMoreLeaderboard()">Load More</button>
+                    </div>
                 </div>
             </div>
             
@@ -9379,6 +10230,8 @@
 
             <div class="nav-right">
                 <a href="#" class="nav-link nav-link-highlight" onclick="showScreen('tasks'); return false;">My Tasks</a>
+                <a href="#" class="nav-link" onclick="showScreen('favorites'); return false;" title="Favorites">⭐</a>
+                <a href="#" class="nav-link" onclick="showScreen('notifications'); return false;" title="Notifications" id="notifications-link">🔔</a>
                 <div class="user-menu" onclick="showScreen('profile')">
                     <img src="images/person.png" alt="User" class="user-avatar">
                 </div>
@@ -9454,6 +10307,46 @@
 
             <div class="tasks-grid" id="tasks-container">
                 <!-- Tasks will be populated by JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Notifications Screen -->
+    <div class="screen" id="notifications-screen">
+        <div class="main-container">
+            <div class="profile-container">
+                <div class="profile-header">
+                    <a href="#" class="back-button" onclick="showScreen('home'); return false;">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                        </svg>
+                        Back to Home
+                    </a>
+                    <h1 class="profile-title">Notifications</h1>
+                </div>
+                <div id="notifications-content">
+                    <div style="text-align: center; padding: 60px; color: var(--neutral-500);">Loading notifications...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Favorites Screen -->
+    <div class="screen" id="favorites-screen">
+        <div class="main-container">
+            <div class="profile-container">
+                <div class="profile-header">
+                    <a href="#" class="back-button" onclick="showScreen('home'); return false;">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                        </svg>
+                        Back to Home
+                    </a>
+                    <h1 class="profile-title">Favorite Providers</h1>
+                </div>
+                <div id="favorites-content">
+                    <div style="text-align: center; padding: 60px; color: var(--neutral-500);">No favorite providers yet.</div>
+                </div>
             </div>
         </div>
     </div>
@@ -9717,6 +10610,48 @@
                     <div class="task-provider-card" id="task-provider-card">
                         <!-- Content will be populated by JavaScript -->
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Image Modal -->
+    <div class="modal" id="image-modal" onclick="closeImageModal(event)">
+        <div class="modal-content" style="max-width: 90vw; max-height: 90vh; background: transparent; box-shadow: none;">
+            <button class="modal-close" onclick="closeImageModal()" style="position: absolute; top: -40px; right: 0; background: var(--white); color: var(--neutral-900);">×</button>
+            <img id="modal-image" src="" alt="Full size" style="max-width: 100%; max-height: 90vh; object-fit: contain; border-radius: var(--radius-lg);">
+        </div>
+    </div>
+
+    <!-- Booking Calendar Modal -->
+    <div class="modal" id="booking-calendar-modal">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h2>Book Service</h2>
+                <button class="modal-close" onclick="closeBookingCalendar()">×</button>
+            </div>
+            <div class="modal-body" id="booking-calendar-content">
+                <!-- Calendar will be rendered here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Provider Profile Screen -->
+    <div class="screen" id="provider-profile-screen">
+        <div class="main-container">
+            <div class="profile-container">
+                <div class="profile-header">
+                    <a href="#" class="back-button" onclick="showScreen('home'); return false;">
+                        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                        </svg>
+                        Back
+                    </a>
+                    <h1 class="profile-title">Provider Profile</h1>
+                </div>
+
+                <div id="provider-profile-content">
+                    <div style="text-align: center; padding: 60px; color: var(--neutral-500);">Loading provider profile...</div>
                 </div>
             </div>
         </div>
@@ -11299,6 +12234,21 @@
             if (screen === 'personal-info') {
                 await loadPersonalInfo();
             }
+
+            // Load provider profile when provider-profile screen is shown
+            if (screen === 'provider-profile') {
+                // Profile is loaded by viewProviderProfile function
+            }
+
+            // Load notifications when notifications screen is shown
+            if (screen === 'notifications') {
+                loadNotifications();
+            }
+
+            // Load favorites when favorites screen is shown
+            if (screen === 'favorites') {
+                loadFavorites();
+            }
             
             // Initialize chat when live-chat screen is shown
             if (screen === 'live-chat') {
@@ -12199,9 +13149,30 @@
                             </div>
                             <div class="feedback-form" id="feedback-form-${request.id}" style="display: none;">
                                 <textarea class="feedback-textarea" id="feedback-text-${request.id}" placeholder="Share your feedback (optional)..." maxlength="500"></textarea>
-                                <div style="display: flex; gap: var(--spacing-sm); margin-top: var(--spacing-md);">
-                                    <button class="btn btn-primary" onclick="submitRating('${request.id}')" style="flex: 1;">Submit Rating</button>
-                                    <button class="btn btn-ghost" onclick="cancelRating('${request.id}')">Cancel</button>
+                                
+                                <!-- Photo Upload Section -->
+                                <div class="photo-upload-section" style="margin-top: var(--spacing-md);">
+                                    <label class="photo-upload-label" for="photo-upload-${request.id}">
+                                        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24" style="margin-right: var(--spacing-xs);">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                                        </svg>
+                                        Add Photos (Optional)
+                                    </label>
+                                    <input type="file" 
+                                           id="photo-upload-${request.id}" 
+                                           class="photo-upload-input" 
+                                           accept="image/*" 
+                                           multiple 
+                                           onchange="handlePhotoUpload('${request.id}', this.files)"
+                                           style="display: none;">
+                                    <div class="photo-preview-container" id="photo-preview-${request.id}" style="display: none; margin-top: var(--spacing-sm);">
+                                        <div class="photo-preview-grid" id="photo-preview-grid-${request.id}"></div>
+                                    </div>
+                                </div>
+                                
+                                <div style="display: flex; gap: var(--spacing-sm); margin-top: var(--spacing-md); flex-wrap: wrap;">
+                                    <button class="btn btn-primary" onclick="submitRating('${request.id}')" style="flex: 1; min-width: 120px;">Submit Rating</button>
+                                    <button class="btn btn-ghost" onclick="cancelRating('${request.id}')" style="min-width: 100px;">Cancel</button>
                                 </div>
                             </div>
                             `}
@@ -12229,6 +13200,7 @@
 
         // Rating Functions
         let currentRatings = {}; // Store current rating selections
+        let reviewPhotos = {}; // Store photos for each review: { requestId: [File objects] }
 
         function setRating(requestId, rating) {
             currentRatings[requestId] = rating;
@@ -12252,6 +13224,83 @@
             feedbackForm.style.display = 'block';
         }
 
+        // Handle photo upload
+        function handlePhotoUpload(requestId, files) {
+            if (!reviewPhotos[requestId]) {
+                reviewPhotos[requestId] = [];
+            }
+
+            Array.from(files).forEach(file => {
+                // Validate file type
+                if (!file.type.startsWith('image/')) {
+                    showNotificationToast('Invalid File', 'Please select image files only');
+                    return;
+                }
+
+                // Validate file size (max 5MB)
+                if (file.size > 5 * 1024 * 1024) {
+                    showNotificationToast('File Too Large', 'Please select images smaller than 5MB');
+                    return;
+                }
+
+                // Limit to 5 photos
+                if (reviewPhotos[requestId].length >= 5) {
+                    showNotificationToast('Photo Limit', 'You can upload up to 5 photos');
+                    return;
+                }
+
+                reviewPhotos[requestId].push(file);
+
+                // Create preview
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const previewContainer = document.getElementById(`photo-preview-${requestId}`);
+                    const previewGrid = document.getElementById(`photo-preview-grid-${requestId}`);
+                    
+                    if (previewContainer) previewContainer.style.display = 'block';
+                    
+                    const previewItem = document.createElement('div');
+                    previewItem.className = 'photo-preview-item';
+                    previewItem.innerHTML = `
+                        <img src="${e.target.result}" alt="Preview">
+                        <button type="button" class="photo-preview-remove" onclick="removePhotoPreview('${requestId}', ${reviewPhotos[requestId].length - 1})">×</button>
+                    `;
+                    previewGrid.appendChild(previewItem);
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // Remove photo preview
+        function removePhotoPreview(requestId, index) {
+            if (reviewPhotos[requestId]) {
+                reviewPhotos[requestId].splice(index, 1);
+                
+                const previewGrid = document.getElementById(`photo-preview-grid-${requestId}`);
+                if (previewGrid) {
+                    previewGrid.innerHTML = '';
+                    reviewPhotos[requestId].forEach((file, idx) => {
+                        const reader = new FileReader();
+                        reader.onload = (e) => {
+                            const previewItem = document.createElement('div');
+                            previewItem.className = 'photo-preview-item';
+                            previewItem.innerHTML = `
+                                <img src="${e.target.result}" alt="Preview">
+                                <button type="button" class="photo-preview-remove" onclick="removePhotoPreview('${requestId}', ${idx})">×</button>
+                            `;
+                            previewGrid.appendChild(previewItem);
+                        };
+                        reader.readAsDataURL(file);
+                    });
+                    
+                    if (reviewPhotos[requestId].length === 0) {
+                        const previewContainer = document.getElementById(`photo-preview-${requestId}`);
+                        if (previewContainer) previewContainer.style.display = 'none';
+                    }
+                }
+            }
+        }
+
         async function submitRating(requestId) {
             const rating = currentRatings[requestId];
             if (!rating) {
@@ -12260,6 +13309,7 @@
             }
 
             const feedbackText = document.getElementById(`feedback-text-${requestId}`).value.trim();
+            const photos = reviewPhotos[requestId] || [];
             
             // Get request data to get provider info
             const requestResult = await firebaseRequests.getRequest(requestId);
@@ -12279,10 +13329,42 @@
             const originalText = submitBtn ? submitBtn.textContent : 'Submit Rating';
             if (submitBtn) {
                 submitBtn.disabled = true;
-                submitBtn.textContent = 'Submitting...';
+                submitBtn.textContent = photos.length > 0 ? 'Uploading photos...' : 'Submitting...';
             }
 
-            // Submit rating
+            // Upload photos to Firebase Storage first
+            let photoUrls = [];
+            if (photos.length > 0) {
+                try {
+                    const currentUser = firebaseAuth.getCurrentUser();
+                    if (!currentUser) {
+                        throw new Error('User not authenticated');
+                    }
+
+                    if (!storage) {
+                        throw new Error('Firebase Storage not initialized. Please check your Firebase configuration.');
+                    }
+
+                    const uploadPromises = photos.map(async (file, index) => {
+                        const fileName = `reviews/${requestId}/${Date.now()}_${index}_${file.name}`;
+                        const storageRef = storage.ref(fileName);
+                        await storageRef.put(file);
+                        return await storageRef.getDownloadURL();
+                    });
+
+                    photoUrls = await Promise.all(uploadPromises);
+                } catch (error) {
+                    console.error('Error uploading photos:', error);
+                    alert('Error uploading photos: ' + error.message);
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = originalText;
+                    }
+                    return;
+                }
+            }
+
+            // Submit rating with photos
             const result = await firebaseProviderRatings.submitRating(
                 requestId,
                 rating,
@@ -12293,10 +13375,14 @@
                     phone: request.provider.phone,
                     specialization: request.provider.specialization,
                     serviceType: request.service
-                }
+                },
+                photoUrls
             );
 
             if (result.success) {
+                // Clear photos
+                delete reviewPhotos[requestId];
+                
                 // Show success message
                 showNotificationToast('Rating Submitted', 'Thank you for your feedback!', 'success');
                 
@@ -13029,6 +14115,675 @@
             }
         }
 
+        // Leaderboard Functions
+        let allLeaderboardData = [];
+        let currentLeaderboardPage = 1;
+        const leaderboardPageSize = 10;
+        let leaderboardListener = null;
+
+        function toggleLeaderboard() {
+            const panel = document.getElementById('leaderboard-panel');
+            if (panel) {
+                panel.classList.toggle('active');
+                if (panel.classList.contains('active')) {
+                    currentLeaderboardPage = 1;
+                    loadLeaderboard();
+                    startLeaderboardListener();
+                } else {
+                    stopLeaderboardListener();
+                }
+            }
+        }
+
+        // Real-time leaderboard updates
+        function startLeaderboardListener() {
+            if (leaderboardListener) return; // Already listening
+
+            // Listen for new completed requests
+            leaderboardListener = db.collection('requests')
+                .where('status', '==', 'completed')
+                .onSnapshot((snapshot) => {
+                    // Reload leaderboard when new completions occur
+                    if (snapshot.docChanges().length > 0) {
+                        loadLeaderboard();
+                    }
+                }, (error) => {
+                    console.warn('Leaderboard listener error:', error);
+                });
+
+            // Also listen for new ratings
+            const ratingsListener = db.collection('provider_ratings')
+                .onSnapshot((snapshot) => {
+                    if (snapshot.docChanges().length > 0) {
+                        loadLeaderboard();
+                    }
+                }, (error) => {
+                    console.warn('Ratings listener error:', error);
+                });
+        }
+
+        function stopLeaderboardListener() {
+            if (leaderboardListener) {
+                leaderboardListener();
+                leaderboardListener = null;
+            }
+        }
+
+        async function loadLeaderboard() {
+            const container = document.getElementById('leaderboard-content');
+            if (!container) {
+                console.error('Leaderboard content container not found');
+                return;
+            }
+
+            // Check if Firebase is initialized
+            if (typeof db === 'undefined' || !db) {
+                console.error('Firebase Firestore not initialized');
+                container.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--error-500);">Database not initialized. Please refresh the page.</div>';
+                return;
+            }
+
+            // Show loading skeleton
+            container.innerHTML = createLoadingSkeleton(5);
+
+            try {
+                // Get all provider ratings summaries
+                const ratingsResult = await firebaseProviderRatings.getAllProviderRatings();
+                
+                if (!ratingsResult.success) {
+                    console.error('Error fetching provider ratings:', ratingsResult.error);
+                    container.innerHTML = `<div style="text-align: center; padding: 40px; color: var(--error-500);">Error loading provider data: ${ratingsResult.error || 'Unknown error'}</div>`;
+                    return;
+                }
+
+                if (!ratingsResult.data || ratingsResult.data.length === 0) {
+                    container.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--neutral-500);">No service providers found yet.</div>';
+                    return;
+                }
+
+                // Get all completed requests to count tasks per provider
+                let providerTaskCounts = {};
+                try {
+                    const allRequestsSnapshot = await db.collection('requests')
+                        .where('status', '==', 'completed')
+                        .get();
+
+                    // Count completed tasks per provider
+                    allRequestsSnapshot.forEach(doc => {
+                        const request = doc.data();
+                        if (request.provider && request.provider.email && request.provider.phone) {
+                            const providerKey = `${request.provider.email}_${request.provider.phone}`;
+                            providerTaskCounts[providerKey] = (providerTaskCounts[providerKey] || 0) + 1;
+                        }
+                    });
+                } catch (queryError) {
+                    console.warn('Error querying completed requests, continuing with ratings only:', queryError);
+                    // Continue without task counts - will show 0 for all
+                }
+
+                // Combine provider data with task counts
+                const leaderboardData = ratingsResult.data
+                    .filter(provider => {
+                        const summary = provider.summary;
+                        // Only include providers with valid email and phone
+                        return summary && summary.providerEmail && summary.providerPhone;
+                    })
+                    .map(provider => {
+                        const summary = provider.summary;
+                        const providerKey = `${summary.providerEmail}_${summary.providerPhone}`;
+                        const tasksCompleted = providerTaskCounts[providerKey] || 0;
+                        
+                        return {
+                            name: summary.providerName || 'Unknown Provider',
+                            serviceType: summary.providerSpecialization || 'Service Provider',
+                            totalRatings: summary.totalRatings || 0,
+                            averageRating: summary.averageRating || 0,
+                            tasksCompleted: tasksCompleted,
+                            email: summary.providerEmail,
+                            phone: summary.providerPhone
+                        };
+                    });
+
+                if (leaderboardData.length === 0) {
+                    container.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--neutral-500);">No service providers with valid data found.</div>';
+                    return;
+                }
+
+                // Store all data globally for filtering/sorting
+                allLeaderboardData = leaderboardData;
+                
+                // Apply filters and render
+                applyLeaderboardFilters();
+
+            } catch (error) {
+                console.error('Error loading leaderboard:', error);
+                container.innerHTML = `<div style="text-align: center; padding: 40px; color: var(--error-500);">Error loading leaderboard: ${error.message || 'Unknown error'}</div>`;
+            }
+        }
+
+        // Helper function to escape HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Apply filters, sorting, and search to leaderboard
+        function applyLeaderboardFilters() {
+            const container = document.getElementById('leaderboard-content');
+            const footer = document.getElementById('leaderboard-footer');
+            if (!container) return;
+
+            let filtered = [...allLeaderboardData];
+
+            // Apply search filter
+            const searchQuery = document.getElementById('leaderboard-search')?.value.toLowerCase() || '';
+            if (searchQuery) {
+                filtered = filtered.filter(provider => 
+                    provider.name.toLowerCase().includes(searchQuery) ||
+                    provider.serviceType.toLowerCase().includes(searchQuery) ||
+                    provider.email.toLowerCase().includes(searchQuery)
+                );
+            }
+
+            // Apply service type filter
+            const serviceFilter = document.getElementById('leaderboard-service-filter')?.value || '';
+            if (serviceFilter) {
+                filtered = filtered.filter(provider => 
+                    provider.serviceType.toLowerCase().includes(serviceFilter.toLowerCase())
+                );
+            }
+
+            // Apply time period filter (for now, we'll use all data - can be enhanced with date tracking)
+            const timeFilter = document.getElementById('leaderboard-time-filter')?.value || 'all';
+            // TODO: Implement time-based filtering when request dates are tracked
+
+            // Apply sorting
+            const sortBy = document.getElementById('leaderboard-sort')?.value || 'tasks';
+            filtered.sort((a, b) => {
+                if (sortBy === 'tasks') {
+                    if (b.tasksCompleted !== a.tasksCompleted) {
+                        return b.tasksCompleted - a.tasksCompleted;
+                    }
+                    if (b.averageRating !== a.averageRating) {
+                        return b.averageRating - a.averageRating;
+                    }
+                    return b.totalRatings - a.totalRatings;
+                } else if (sortBy === 'ratings') {
+                    if (b.averageRating !== a.averageRating) {
+                        return b.averageRating - a.averageRating;
+                    }
+                    if (b.totalRatings !== a.totalRatings) {
+                        return b.totalRatings - a.totalRatings;
+                    }
+                    return b.tasksCompleted - a.tasksCompleted;
+                } else if (sortBy === 'name') {
+                    return a.name.localeCompare(b.name);
+                }
+                return 0;
+            });
+
+            // Pagination
+            const startIndex = (currentLeaderboardPage - 1) * leaderboardPageSize;
+            const endIndex = startIndex + leaderboardPageSize;
+            const paginatedProviders = filtered.slice(startIndex, endIndex);
+            const hasMore = filtered.length > endIndex;
+
+            if (filtered.length === 0) {
+                container.innerHTML = '<div style="text-align: center; padding: 40px; color: var(--neutral-500);">No providers match your filters.</div>';
+                if (footer) footer.style.display = 'none';
+                return;
+            }
+
+            // Render leaderboard with badges
+            container.innerHTML = paginatedProviders.map((provider, index) => {
+                const rank = startIndex + index + 1;
+                const avatarUrl = `images/person.png`;
+                
+                // Determine badges
+                const badges = [];
+                if (rank === 1) badges.push('<span class="provider-badge badge-top">#1</span>');
+                if (rank <= 3) badges.push('<span class="provider-badge badge-top">Top 3</span>');
+                if (provider.averageRating >= 4.5 && provider.totalRatings >= 10) {
+                    badges.push('<span class="provider-badge badge-verified">Verified</span>');
+                }
+                if (provider.tasksCompleted > 100) {
+                    badges.push('<span class="provider-badge badge-new">Expert</span>');
+                }
+                
+                return `
+                    <div class="leaderboard-item" onclick="viewProviderProfile('${escapeHtml(provider.email)}', '${escapeHtml(provider.phone)}')">
+                        <div class="leaderboard-rank">${rank}</div>
+                        <img src="${avatarUrl}" alt="${escapeHtml(provider.name)}" class="leaderboard-avatar" onerror="this.src='images/person.png'">
+                        <div class="leaderboard-info">
+                            <div class="leaderboard-name">
+                                ${escapeHtml(provider.name)}
+                                ${badges.join('')}
+                            </div>
+                            <div class="leaderboard-details">
+                                <div class="leaderboard-detail-item">
+                                    <span>${escapeHtml(provider.serviceType)}</span>
+                                </div>
+                                <div class="leaderboard-detail-item">
+                                    <span>⭐ ${provider.averageRating.toFixed(1)} (${provider.totalRatings} ratings)</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="leaderboard-tasks">${provider.tasksCompleted.toLocaleString()}</div>
+                    </div>
+                `;
+            }).join('');
+
+            // Show/hide load more button
+            if (footer) {
+                footer.style.display = hasMore ? 'block' : 'none';
+            }
+        }
+
+        // Filter leaderboard (called when filters change)
+        function filterLeaderboard() {
+            currentLeaderboardPage = 1;
+            applyLeaderboardFilters();
+        }
+
+        // Load more providers
+        function loadMoreLeaderboard() {
+            currentLeaderboardPage++;
+            applyLeaderboardFilters();
+        }
+
+        // View provider profile
+        async function viewProviderProfile(email, phone) {
+            try {
+                // Get provider data
+                const result = await firebaseProviderRatings.getProviderRatings(email, phone);
+                
+                if (!result.success || !result.data) {
+                    alert('Provider profile not found');
+                    return;
+                }
+
+                const providerData = result.data;
+                const summary = providerData.summary || {};
+                const ratings = providerData.ratings || [];
+
+                // Get task count
+                let tasksCompleted = 0;
+                try {
+                    const requestsSnapshot = await db.collection('requests')
+                        .where('status', '==', 'completed')
+                        .get();
+                    
+                    requestsSnapshot.forEach(doc => {
+                        const request = doc.data();
+                        if (request.provider && 
+                            request.provider.email === email && 
+                            request.provider.phone === phone) {
+                            tasksCompleted++;
+                        }
+                    });
+                } catch (error) {
+                    console.warn('Error counting tasks:', error);
+                }
+
+                // Render provider profile
+                const content = document.getElementById('provider-profile-content');
+                if (!content) return;
+
+                content.innerHTML = `
+                    <div class="profile-card">
+                        <div class="profile-info-card" style="text-align: center; padding: var(--spacing-xl);">
+                            <img src="images/person.png" alt="${escapeHtml(summary.providerName || 'Provider')}" class="profile-avatar" style="width: 120px; height: 120px; margin: 0 auto var(--spacing-lg);">
+                            <div class="profile-info">
+                                <div class="profile-name" style="font-size: 28px; margin-bottom: var(--spacing-sm);">${escapeHtml(summary.providerName || 'Unknown Provider')}</div>
+                                <div class="profile-email" style="font-size: 16px; color: var(--neutral-600); margin-bottom: var(--spacing-md);">${escapeHtml(summary.providerEmail || '')}</div>
+                                <div style="display: flex; justify-content: center; gap: var(--spacing-lg); margin-bottom: var(--spacing-lg);">
+                                    <div style="text-align: center;">
+                                        <div style="font-size: 24px; font-weight: 700; color: var(--primary-600);">${tasksCompleted}</div>
+                                        <div style="font-size: 12px; color: var(--neutral-600);">Tasks Completed</div>
+                                    </div>
+                                    <div style="text-align: center;">
+                                        <div style="font-size: 24px; font-weight: 700; color: var(--primary-600);">${(summary.averageRating || 0).toFixed(1)}</div>
+                                        <div style="font-size: 12px; color: var(--neutral-600);">Average Rating</div>
+                                    </div>
+                                    <div style="text-align: center;">
+                                        <div style="font-size: 24px; font-weight: 700; color: var(--primary-600);">${summary.totalRatings || 0}</div>
+                                        <div style="font-size: 12px; color: var(--neutral-600);">Total Ratings</div>
+                                    </div>
+                                </div>
+                                <div style="padding: var(--spacing-md); background: var(--neutral-50); border-radius: var(--radius-md); margin-bottom: var(--spacing-lg);">
+                                    <div style="font-weight: 600; margin-bottom: var(--spacing-xs);">Specialization</div>
+                                    <div style="color: var(--neutral-700);">${escapeHtml(summary.providerSpecialization || 'Service Provider')}</div>
+                                </div>
+                                ${summary.providerPhone ? `
+                                <div style="padding: var(--spacing-md); background: var(--neutral-50); border-radius: var(--radius-md); margin-bottom: var(--spacing-lg);">
+                                    <div style="font-weight: 600; margin-bottom: var(--spacing-xs);">Contact</div>
+                                    <div style="color: var(--neutral-700);">📞 ${escapeHtml(summary.providerPhone)}</div>
+                                </div>
+                                ` : ''}
+                                <div style="display: flex; gap: var(--spacing-md); flex-wrap: wrap;">
+                                    <button class="btn btn-primary" onclick="openBookingCalendar('${escapeHtml(summary.providerEmail || '')}', '${escapeHtml(summary.providerPhone || '')}', '${escapeHtml(summary.providerName || 'Provider')}')" style="flex: 1; min-width: 150px;">
+                                        📅 Book Service
+                                    </button>
+                                    <button class="btn btn-ghost" onclick="addToFavorites('${escapeHtml(summary.providerEmail || '')}', '${escapeHtml(summary.providerPhone || '')}', '${escapeHtml(summary.providerName || 'Provider')}')" style="flex: 1; min-width: 150px;">
+                                        ⭐ Add to Favorites
+                                    </button>
+                                    <button class="btn btn-ghost" onclick="window.location.href='tel:${escapeHtml(summary.providerPhone || '')}'" style="flex: 1; min-width: 150px;">
+                                        📞 Call
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        ${ratings.length > 0 ? `
+                        <div style="margin-top: var(--spacing-xl);">
+                            <h2 style="font-size: 20px; font-weight: 600; margin-bottom: var(--spacing-lg);">Recent Reviews</h2>
+                            <div style="display: flex; flex-direction: column; gap: var(--spacing-md);">
+                                ${ratings.slice(0, 10).map(rating => {
+                                    const date = rating.createdAt ? new Date(rating.createdAt.toDate ? rating.createdAt.toDate() : rating.createdAt).toLocaleDateString() : 'N/A';
+                                    return `
+                                        <div style="padding: var(--spacing-md); border: 1px solid var(--neutral-200); border-radius: var(--radius-md);">
+                                            <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: var(--spacing-sm);">
+                                                <div>
+                                                    <div style="font-weight: 600; margin-bottom: var(--spacing-xs);">${escapeHtml(rating.serviceType || 'Service')}</div>
+                                                    <div style="font-size: 12px; color: var(--neutral-500);">${date}</div>
+                                                </div>
+                                                <div style="font-size: 18px;">${'★'.repeat(rating.rating)}${'☆'.repeat(5 - rating.rating)}</div>
+                                            </div>
+                                            ${rating.feedback ? `<div style="color: var(--neutral-700); margin-top: var(--spacing-sm);">"${escapeHtml(rating.feedback)}"</div>` : ''}
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                        </div>
+                        ` : '<div style="text-align: center; padding: var(--spacing-xl); color: var(--neutral-500);">No reviews yet.</div>'}
+                    </div>
+                `;
+
+                // Load portfolio images if available
+                loadProviderPortfolio(email, phone);
+
+                // Show provider profile screen
+                showScreen('provider-profile');
+            } catch (error) {
+                console.error('Error loading provider profile:', error);
+                alert('Error loading provider profile: ' + error.message);
+            }
+        }
+
+        // Load provider portfolio
+        async function loadProviderPortfolio(email, phone) {
+            const gallery = document.getElementById('provider-portfolio-gallery');
+            if (!gallery) return;
+
+            try {
+                // Get portfolio from Firestore (if exists)
+                const portfolioRef = db.collection('provider_portfolios')
+                    .where('email', '==', email)
+                    .where('phone', '==', phone)
+                    .limit(1);
+                
+                const snapshot = await portfolioRef.get();
+                
+                if (snapshot.empty) {
+                    gallery.innerHTML = '<div style="text-align: center; padding: var(--spacing-xl); color: var(--neutral-500); grid-column: 1 / -1;">No portfolio images available yet</div>';
+                    return;
+                }
+
+                const portfolio = snapshot.docs[0].data();
+                const images = portfolio.images || [];
+
+                if (images.length === 0) {
+                    gallery.innerHTML = '<div style="text-align: center; padding: var(--spacing-xl); color: var(--neutral-500); grid-column: 1 / -1;">No portfolio images available yet</div>';
+                    return;
+                }
+
+                gallery.innerHTML = images.map((img, index) => `
+                    <img src="${escapeHtml(img.url || img)}" 
+                         alt="Portfolio ${index + 1}" 
+                         style="width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: var(--radius-md); cursor: pointer; transition: transform var(--duration-normal);"
+                         onerror="this.src='images/person.png'"
+                         onclick="openImageModal('${escapeHtml(img.url || img)}')"
+                         onmouseover="this.style.transform='scale(1.05)'"
+                         onmouseout="this.style.transform='scale(1)'">
+                `).join('');
+            } catch (error) {
+                console.warn('Error loading portfolio:', error);
+                gallery.innerHTML = '<div style="text-align: center; padding: var(--spacing-xl); color: var(--neutral-500); grid-column: 1 / -1;">Error loading portfolio</div>';
+            }
+        }
+
+        // Image Modal Functions
+        function openImageModal(imageUrl) {
+            const modal = document.getElementById('image-modal');
+            const img = document.getElementById('modal-image');
+            if (modal && img) {
+                img.src = imageUrl;
+                modal.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            }
+        }
+
+        function closeImageModal(event) {
+            const modal = document.getElementById('image-modal');
+            if (!modal) return;
+
+            // Close if clicking backdrop or close button
+            if (!event || event.target === modal || event.target.classList.contains('modal-close')) {
+                modal.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        }
+
+        // Booking Calendar Functions
+        function openBookingCalendar(providerEmail, providerPhone, providerName) {
+            const modal = document.getElementById('booking-calendar-modal');
+            const content = document.getElementById('booking-calendar-content');
+            
+            if (!modal || !content) return;
+
+            // Store provider info for booking
+            window.currentBookingProvider = { email: providerEmail, phone: providerPhone, name: providerName };
+
+            // Render calendar
+            renderBookingCalendar(content);
+
+            modal.classList.add('active');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeBookingCalendar() {
+            const modal = document.getElementById('booking-calendar-modal');
+            if (modal) {
+                modal.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+        }
+
+        function renderBookingCalendar(container) {
+            const today = new Date();
+            const currentMonth = today.getMonth();
+            const currentYear = today.getFullYear();
+            
+            let viewMonth = currentMonth;
+            let viewYear = currentYear;
+
+            const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 
+                              'July', 'August', 'September', 'October', 'November', 'December'];
+            const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+            function generateCalendar() {
+                const firstDay = new Date(viewYear, viewMonth, 1).getDay();
+                const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+                
+                let calendarHTML = `
+                    <div class="calendar-container">
+                        <div class="calendar-header">
+                            <button class="calendar-nav-btn" onclick="changeMonth(-1)">‹</button>
+                            <h3 style="margin: 0; font-size: 20px; font-weight: 600;">${monthNames[viewMonth]} ${viewYear}</h3>
+                            <button class="calendar-nav-btn" onclick="changeMonth(1)">›</button>
+                        </div>
+                        <div class="calendar-grid">
+                            ${dayNames.map(day => `<div class="calendar-day-header">${day}</div>`).join('')}
+                `;
+
+                // Empty cells for days before month starts
+                for (let i = 0; i < firstDay; i++) {
+                    calendarHTML += '<div class="calendar-day disabled"></div>';
+                }
+
+                // Days of the month
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const date = new Date(viewYear, viewMonth, day);
+                    const isPast = date < today && date.toDateString() !== today.toDateString();
+                    const isToday = date.toDateString() === today.toDateString();
+                    const classes = ['calendar-day'];
+                    
+                    if (isPast) classes.push('disabled');
+                    if (isToday) classes.push('today');
+                    // Mark as available (in real app, check provider availability)
+                    if (!isPast) classes.push('available');
+
+                    calendarHTML += `
+                        <div class="${classes.join(' ')}" 
+                             ${!isPast ? `onclick="selectBookingDate(${day}, ${viewMonth}, ${viewYear})"` : ''}>
+                            ${day}
+                        </div>
+                    `;
+                }
+
+                calendarHTML += `
+                        </div>
+                        <div style="margin-top: var(--spacing-lg); padding-top: var(--spacing-lg); border-top: 1px solid var(--neutral-200);">
+                            <div style="display: flex; gap: var(--spacing-sm); margin-bottom: var(--spacing-md);">
+                                <div style="width: 16px; height: 16px; border-radius: 4px; background: var(--success-50); border: 2px solid var(--success-500);"></div>
+                                <span style="font-size: 14px; color: var(--neutral-600);">Available</span>
+                            </div>
+                            <div id="selected-date-info" style="display: none; padding: var(--spacing-md); background: var(--primary-50); border-radius: var(--radius-md); margin-bottom: var(--spacing-md);">
+                                <div style="font-weight: 600; margin-bottom: var(--spacing-sm);">Selected Date</div>
+                                <div id="selected-date-text"></div>
+                            </div>
+                            <button class="btn btn-primary" id="confirm-booking-btn" onclick="confirmBooking()" style="width: 100%;" disabled>
+                                Confirm Booking
+                            </button>
+                        </div>
+                    </div>
+                `;
+
+                container.innerHTML = calendarHTML;
+            }
+
+            window.changeMonth = (direction) => {
+                viewMonth += direction;
+                if (viewMonth < 0) {
+                    viewMonth = 11;
+                    viewYear--;
+                } else if (viewMonth > 11) {
+                    viewMonth = 0;
+                    viewYear++;
+                }
+                generateCalendar();
+            };
+
+            window.selectBookingDate = (day, month, year) => {
+                const selectedDate = new Date(year, month, day);
+                const dateText = selectedDate.toLocaleDateString('en-US', { 
+                    weekday: 'long', 
+                    year: 'numeric', 
+                    month: 'long', 
+                    day: 'numeric' 
+                });
+
+                document.getElementById('selected-date-info').style.display = 'block';
+                document.getElementById('selected-date-text').textContent = dateText;
+                document.getElementById('confirm-booking-btn').disabled = false;
+                
+                window.selectedBookingDate = selectedDate;
+            };
+
+            window.confirmBooking = () => {
+                if (!window.currentBookingProvider || !window.selectedBookingDate) return;
+
+                const provider = window.currentBookingProvider;
+                const date = window.selectedBookingDate;
+
+                // Create service request
+                const serviceType = prompt('What service do you need?');
+                if (!serviceType) return;
+
+                const description = prompt('Please describe the service needed:');
+                
+                // Create request (using existing request creation logic)
+                createServiceRequest({
+                    service: serviceType,
+                    description: description || '',
+                    preferredDate: date.toISOString().split('T')[0],
+                    providerEmail: provider.email,
+                    providerPhone: provider.phone,
+                    providerName: provider.name
+                });
+
+                closeBookingCalendar();
+                showNotificationToast('Booking Requested', `Your booking request for ${date.toLocaleDateString()} has been submitted`);
+            };
+
+            generateCalendar();
+        }
+
+        // Helper function to create service request
+        async function createServiceRequest(requestData) {
+            const currentUser = firebaseAuth.getCurrentUser();
+            if (!currentUser) {
+                alert('Please log in to book a service');
+                return;
+            }
+
+            try {
+                const requestRef = await db.collection('requests').add({
+                    clientUid: currentUser.uid,
+                    clientEmail: currentUser.email || '',
+                    clientName: currentUser.displayName || '',
+                    service: requestData.service,
+                    description: requestData.description,
+                    status: 'pending',
+                    preferredDate: requestData.preferredDate,
+                    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                    provider: requestData.providerEmail ? {
+                        email: requestData.providerEmail,
+                        phone: requestData.providerPhone,
+                        name: requestData.providerName
+                    } : null
+                });
+
+                showNotificationToast('Success', 'Service request created successfully');
+                return { success: true, id: requestRef.id };
+            } catch (error) {
+                console.error('Error creating request:', error);
+                alert('Error creating request: ' + error.message);
+                return { success: false, error: error.message };
+            }
+        }
+
+        // Close leaderboard when clicking outside
+        document.addEventListener('click', (e) => {
+            const panel = document.getElementById('leaderboard-panel');
+            if (!panel) return;
+            
+            // Check if click is inside the panel or on any leaderboard toggle
+            const isClickInsidePanel = panel.contains(e.target);
+            const isClickOnToggle = e.target.closest('.leaderboard-toggle');
+            const isClickOnClose = e.target.closest('.leaderboard-close');
+            
+            // Don't close if clicking on toggle (it will toggle itself) or close button
+            if (isClickOnToggle || isClickOnClose) {
+                return;
+            }
+            
+            // Close if clicking outside the panel
+            if (!isClickInsidePanel && panel.classList.contains('active')) {
+                panel.classList.remove('active');
+            }
+        });
 
         // Agent Chat Functions
         function switchAgentTab(tab) {
